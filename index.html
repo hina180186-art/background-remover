@@ -507,11 +507,15 @@
 
         try {
           const res = await fetch('/remove-bg', { method: 'POST', body: fd });
+          if (!res.ok) {
+             const text = await res.text();
+             throw new Error(text || `Server Error (${res.status})`);
+          }
           const data = await res.json();
           if(!data.success) throw new Error(data.error);
           await this.initEditor(file, data.image);
         } catch(err) {
-          alert('Elite Engine Error: ' + err.message);
+          alert('Extraction Failed: ' + err.message);
           location.reload();
         }
       }
