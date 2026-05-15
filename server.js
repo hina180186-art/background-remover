@@ -8,10 +8,16 @@ const multer = require("multer");
 const axios = require("axios");
 const FormData = require("form-data");
 const path = require("path");
+const nodemailer = require("nodemailer");
+const jwt = require("jsonwebtoken");
 const config = require("./config");
 
 const app = express();
 const PORT = config.PORT;
+
+// In-memory store for OTPs (For production, use Redis or DB)
+const otpStore = new Map();
+const JWT_SECRET = process.env.JWT_SECRET || 'aura-elite-secret-777';
 
 // ─── Multer: in-memory storage ──────────────────────────────────
 const upload = multer({
@@ -28,6 +34,75 @@ const upload = multer({
 // ─── Static assets ───────────────────────────────────────────────
 app.use(express.json());
 app.use(express.static(path.join(__dirname)));
+
+// ─── Authentication Engine ──────────────────────────────────────
+
+// Mock Transporter / Real Transporter
+const transporter = nodemailer.createTransport(
+  process.env.SMTP_HOST 
+    ? {
+        host: process.env.SMTP_HOST,
+        port: process.env.SMTP_PORT,
+        secure: process.env.SMTP_SECURE === 'true',
+        auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASS }
+      }
+    : {
+        streamTransport: true,
+        newline: 'unix',
+        buffer: true
+      }
+);
+
+// Route: Send OTP
+app.post('/api/auth/send-otp', async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ success: false, error: 'Email required' });
+
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  otpStore.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 }); // 10 min expiry
+
+  const mailOptions = {
+    from: '"Aura Elite+ Authenticator" <auth@aura-elite.pro>',
+    to: email,
+    subject: 'Your Aura Elite+ Access Code',
+    text: `Your luxury access code is: ${otp}. It expires in 10 minutes.`,
+    html: `
+      <div style="background:#020202; color:#fff; padding:40px; font-family:'Outfit', sans-serif; text-align:center; border:1px solid #D4AF37;">
+        <h2 style="color:#D4AF37; text-transform:uppercase; letter-spacing:4px;">Aura Elite+</h2>
+        <p style="font-size:18px; opacity:0.8;">Your exclusive access code is:</p>
+        <h1 style="font-size:48px; color:#D4AF37; margin:20px 0;">${otp}</h1>
+        <p style="font-size:12px; opacity:0.4; text-transform:uppercase; letter-spacing:2px;">Expires in 10 minutes</p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    if (!process.env.SMTP_HOST) {
+      console.log('----------------------------------------------------');
+      console.log(`🔑  OTP for ${email}: ${otp}`);
+      console.log('----------------------------------------------------');
+    }
+    res.json({ success: true, message: 'OTP sent' });
+  } catch (err) {
+    console.error('Email error:', err);
+    res.status(500).json({ success: false, error: 'Failed to send email' });
+  }
+});
+
+// Route: Verify OTP
+app.post('/api/auth/verify-otp', (req, res) => {
+  const { email, otp } = req.body;
+  const stored = otpStore.get(email);
+
+  if (stored && stored.otp === otp && stored.expires > Date.now()) {
+    otpStore.delete(email); // One-time use
+    const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '24h' });
+    res.json({ success: true, token });
+  } else {
+    res.status(400).json({ success: false, error: 'Invalid or expired code' });
+  }
+});
 
 // ─── Serve index.html ────────────────────────────────────────────
 app.get("/", (req, res) => {
