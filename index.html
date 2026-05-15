@@ -47,10 +47,8 @@
       transform-style: preserve-3d;
       perspective: 1000px;
     }
-    /* Fallback and Reveal logic */
-    .reveal-on-scroll { opacity: 1; transform: translateY(0); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
-    .js-enabled .reveal-on-scroll { opacity: 0; transform: translateY(30px); }
-    .js-enabled .reveal { opacity: 0; transform: translateY(30px); }
+    /* Fallback and Reveal logic (Safe) */
+    .reveal-on-scroll, .reveal { opacity: 1; transform: translateY(0); }
 
     .floating { animation: float 6s ease-in-out infinite; }
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
@@ -256,22 +254,31 @@
        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
     }
 
-    // GSAP Scroll Animations (Resilient)
+    // GSAP Scroll Animations (Fail-safe)
     function initAnimations() {
-      if (typeof gsap === 'undefined') {
-         console.warn("GSAP not loaded. Using CSS fallback.");
+      if (typeof gsap === 'undefined' || typeof ScrollTrigger === 'undefined') {
+         console.warn("GSAP/ScrollTrigger not detected. Falling back to static luxury.");
          return;
       }
       
       gsap.registerPlugin(ScrollTrigger);
 
-      gsap.to(".reveal", { opacity: 1, y: 0, duration: 1.5, stagger: 0.3, ease: "power4.out" });
-      gsap.to(".reveal-delay", { opacity: 1, y: 0, duration: 1.5, delay: 0.5, ease: "power4.out" });
+      // Hero Animations: Animate FROM hidden/down TO current visible state
+      gsap.from(".reveal", { opacity: 0, y: 30, duration: 1.5, stagger: 0.3, ease: "power4.out" });
+      gsap.from(".reveal-delay", { opacity: 0, y: 30, duration: 1.5, delay: 0.5, ease: "power4.out" });
 
+      // Scroll Animations
       document.querySelectorAll(".reveal-on-scroll").forEach(el => {
-         gsap.to(el, {
-            scrollTrigger: { trigger: el, start: "top 90%", toggleActions: "play none none none" },
-            opacity: 1, y: 0, duration: 1.2, ease: "power3.out"
+         gsap.from(el, {
+            scrollTrigger: { 
+               trigger: el, 
+               start: "top 95%", 
+               toggleActions: "play none none none" 
+            },
+            opacity: 0, 
+            y: 50, 
+            duration: 1.2, 
+            ease: "power3.out"
          });
       });
       
@@ -281,11 +288,9 @@
             const rect = card.getBoundingClientRect();
             const x = e.clientX - rect.left;
             const y = e.clientY - rect.top;
-            const xc = rect.width / 2;
-            const yc = rect.height / 2;
-            const dx = x - xc;
-            const dy = y - yc;
-            card.style.transform = `perspective(1000px) rotateY(${dx / 10}deg) rotateX(${-dy / 10}deg) scale(1.05)`;
+            const dx = (x - rect.width / 2) / 10;
+            const dy = (y - rect.height / 2) / 10;
+            card.style.transform = `perspective(1000px) rotateY(${dx}deg) rotateX(${-dy}deg) scale(1.05)`;
          });
          card.addEventListener('mouseleave', () => {
             card.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)`;
@@ -295,8 +300,10 @@
       ScrollTrigger.refresh();
     }
 
-    window.onload = initAnimations;
-    setTimeout(initAnimations, 1000); // Fail-safe
+    // Attempt init immediately and on load
+    initAnimations();
+    window.addEventListener('load', initAnimations);
+    setTimeout(initAnimations, 1500); 
 
     // Custom Cursor tracking
     const cursor = document.getElementById('cursor');
