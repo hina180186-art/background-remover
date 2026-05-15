@@ -14,24 +14,28 @@
     * { font-family: 'Outfit', sans-serif; -webkit-font-smoothing: antialiased; }
     body { background: #050505; color: #f8f8f8; scroll-behavior: smooth; overflow-x: hidden; }
 
+    /* Luxury Gold Palette */
     :root {
-      --gold: #D4AF37;
-      --gold-bright: #FFD700;
-      --gold-dim: #8B4513;
+      --gold-primary: #FFD700;
+      --gold-light: #FFF8DC;
+      --gold-dark: #B8860B;
+      --luxury-bg: #050505;
+      --glass-border: rgba(255, 215, 0, 0.2);
+      --glass-bg: rgba(255, 255, 255, 0.03);
     }
 
     /* Cinematic Layout */
     section { min-height: 100vh; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; }
 
     .glass { 
-      background: rgba(255, 255, 255, 0.02); 
+      background: var(--glass-bg); 
       backdrop-filter: blur(40px); 
-      border: 1px solid rgba(212, 175, 55, 0.1); 
+      border: 1px solid var(--glass-border); 
       box-shadow: 0 40px 100px rgba(0,0,0,0.8);
     }
 
     .btn-lux {
-      background: linear-gradient(135deg, var(--gold-bright), var(--gold-dim));
+      background: linear-gradient(135deg, var(--gold-primary), var(--gold-dark));
       color: #000;
       transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
       letter-spacing: 0.2em;
@@ -43,11 +47,16 @@
       transform-style: preserve-3d;
       perspective: 1000px;
     }
+    /* Fallback and Reveal logic */
+    .reveal-on-scroll { opacity: 1; transform: translateY(0); transition: opacity 0.6s ease-out, transform 0.6s ease-out; }
+    .js-enabled .reveal-on-scroll { opacity: 0; transform: translateY(30px); }
+    .js-enabled .reveal { opacity: 0; transform: translateY(30px); }
+
     .floating { animation: float 6s ease-in-out infinite; }
     @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
     /* Custom Cursor */
-    #cursor { position: fixed; width: 40px; height: 40px; border: 1px solid var(--gold); border-radius: 50%; pointer-events: none; z-index: 9999; transition: transform 0.1s; mix-blend-mode: difference; }
+    #cursor { position: fixed; width: 40px; height: 40px; border: 1px solid var(--gold-primary); border-radius: 50%; pointer-events: none; z-index: 9999; transition: transform 0.1s; mix-blend-mode: difference; }
 
     /* Split Screen Features */
     .feature-card { transition: all 0.5s ease; cursor: default; }
@@ -239,26 +248,55 @@
 
   </section>
 
-  <!-- ─── Core JS ─── -->
+  <!-- ─── Core JS (Resilient) ─── -->
   <script>
-    // --- 1. UX Interactivity ---
+    document.documentElement.classList.add('js-enabled');
+    
     function scrollTo(id) {
        document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
     }
 
-    // GSAP Scroll Animations
-    gsap.registerPlugin(ScrollTrigger);
+    // GSAP Scroll Animations (Resilient)
+    function initAnimations() {
+      if (typeof gsap === 'undefined') {
+         console.warn("GSAP not loaded. Using CSS fallback.");
+         return;
+      }
+      
+      gsap.registerPlugin(ScrollTrigger);
 
-    gsap.from(".reveal", { opacity: 0, y: 50, duration: 1.5, stagger: 0.3, ease: "power4.out" });
-    gsap.from(".reveal-delay", { opacity: 0, y: 30, duration: 1.5, delay: 0.5, ease: "power4.out" });
-    gsap.from(".reveal-delay-2", { opacity: 0, scale: 0.8, duration: 1.5, delay: 0.8, ease: "back.out(1.7)" });
+      gsap.to(".reveal", { opacity: 1, y: 0, duration: 1.5, stagger: 0.3, ease: "power4.out" });
+      gsap.to(".reveal-delay", { opacity: 1, y: 0, duration: 1.5, delay: 0.5, ease: "power4.out" });
 
-    document.querySelectorAll(".reveal-on-scroll").forEach(el => {
-       gsap.from(el, {
-          scrollTrigger: { trigger: el, start: "top 90%" },
-          opacity: 0, y: 60, duration: 1.2, ease: "power3.out"
-       });
-    });
+      document.querySelectorAll(".reveal-on-scroll").forEach(el => {
+         gsap.to(el, {
+            scrollTrigger: { trigger: el, start: "top 90%", toggleActions: "play none none none" },
+            opacity: 1, y: 0, duration: 1.2, ease: "power3.out"
+         });
+      });
+      
+      // 3D Tilt Automation
+      document.querySelectorAll('.feature-card').forEach(card => {
+         card.addEventListener('mousemove', (e) => {
+            const rect = card.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const y = e.clientY - rect.top;
+            const xc = rect.width / 2;
+            const yc = rect.height / 2;
+            const dx = x - xc;
+            const dy = y - yc;
+            card.style.transform = `perspective(1000px) rotateY(${dx / 10}deg) rotateX(${-dy / 10}deg) scale(1.05)`;
+         });
+         card.addEventListener('mouseleave', () => {
+            card.style.transform = `perspective(1000px) rotateY(0deg) rotateX(0deg) scale(1)`;
+         });
+      });
+
+      ScrollTrigger.refresh();
+    }
+
+    window.onload = initAnimations;
+    setTimeout(initAnimations, 1000); // Fail-safe
 
     // Custom Cursor tracking
     const cursor = document.getElementById('cursor');
