@@ -1,276 +1,285 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Aura — AI Luxury Background Remover</title>
-  <meta name="description" content="Aura: The ultimate luxury background removal tool for professionals." />
+  <title>Aura — The Art of AI Background Removal</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700&display=swap" />
+  <!-- GSAP for Ultra-smooth 3D/Scroll -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
   <style>
     * { font-family: 'Outfit', sans-serif; -webkit-font-smoothing: antialiased; }
-    body { background: #050505; color: #f8f8f8; min-height: 100vh; overflow-x: hidden; }
+    body { background: #050505; color: #f8f8f8; scroll-behavior: smooth; overflow-x: hidden; }
 
-    /* Luxury Gold Palette */
     :root {
-      --gold-primary: #D4AF37;
-      --gold-light: #FFD700;
-      --gold-dark: #B8860B;
-      --luxury-bg: #050505;
-      --glass-border: rgba(212, 175, 55, 0.15);
-      --glass-bg: rgba(255, 255, 255, 0.02);
+      --gold: #D4AF37;
+      --gold-bright: #FFD700;
+      --gold-dim: #8B4513;
     }
 
-    ::-webkit-scrollbar { width: 4px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: var(--gold-dark); border-radius: 10px; }
+    /* Cinematic Layout */
+    section { min-height: 100vh; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 4rem 2rem; }
 
     .glass { 
-      background: var(--glass-bg); 
-      backdrop-filter: blur(25px); 
-      border: 1px solid var(--glass-border); 
-      box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-    }
-    .glass-active { 
-      background: rgba(212, 175, 55, 0.08); 
-      border-color: var(--gold-primary); 
-      box-shadow: 0 0 20px rgba(212, 175, 55, 0.2);
+      background: rgba(255, 255, 255, 0.02); 
+      backdrop-filter: blur(40px); 
+      border: 1px solid rgba(212, 175, 55, 0.1); 
+      box-shadow: 0 40px 100px rgba(0,0,0,0.8);
     }
 
-    .lux-grad {
-      background: linear-gradient(135deg, var(--gold-light), var(--gold-dark));
+    .btn-lux {
+      background: linear-gradient(135deg, var(--gold-bright), var(--gold-dim));
       color: #000;
-      transition: all 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+      transition: all 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+      letter-spacing: 0.2em;
     }
-    .lux-grad:hover { 
-      filter: brightness(1.2); 
-      transform: translateY(-2px) scale(1.02);
-      box-shadow: 0 15px 30px -10px rgba(212, 175, 55, 0.5);
-    }
+    .btn-lux:hover { transform: translateY(-4px) scale(1.05); filter: brightness(1.2); box-shadow: 0 20px 40px rgba(212, 175, 55, 0.3); }
 
-    .lux-outline {
-      border: 1px solid var(--glass-border);
-      transition: all 0.3s ease;
-      color: var(--gold-primary);
+    /* 3D Visual Effects */
+    .hero-3d-card {
+      transform-style: preserve-3d;
+      perspective: 1000px;
     }
-    .lux-outline:hover { 
-      background: rgba(212, 175, 55, 0.05); 
-      border-color: var(--gold-primary);
-    }
+    .floating { animation: float 6s ease-in-out infinite; }
+    @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-20px); } }
 
-    /* Editor Viewport */
-    .viewport { 
-      position: relative; 
-      width: 100%; 
-      height: 65vh; 
-      background: #0a0a0a; 
-      border-radius: 32px; 
-      overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.05);
-    }
-    .editor-canvas { 
-      position: absolute; 
-      max-width: 100%; 
-      max-height: 100%; 
-      top: 50%; 
-      left: 50%; 
-      transform: translate(-50%, -50%); 
-      cursor: crosshair; 
-      image-rendering: -webkit-optimize-contrast;
-    }
-    
+    /* Custom Cursor */
+    #cursor { position: fixed; width: 40px; height: 40px; border: 1px solid var(--gold); border-radius: 50%; pointer-events: none; z-index: 9999; transition: transform 0.1s; mix-blend-mode: difference; }
+
+    /* Split Screen Features */
+    .feature-card { transition: all 0.5s ease; cursor: default; }
+    .feature-card:hover { background: rgba(212, 175, 55, 0.05); border-color: rgba(212, 175, 55, 0.4); }
+
+    /* Editor Viewport Styling */
+    .editor-container { width: 100%; max-width: 1400px; margin: 0 auto; display: grid; grid-template-columns: 1fr 380px; gap: 40px; height: 80vh; }
+    .viewport { border-radius: 40px; background: #080808; border: 1px solid rgba(212, 175, 55, 0.05); overflow: hidden; position: relative; }
+    .editor-canvas { position: absolute; top:50%; left:50%; transform: translate(-50%, -50%); cursor: crosshair; }
     .transparent-pattern {
-      background-image: linear-gradient(45deg, #111 25%, transparent 25%), linear-gradient(-45deg, #111 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #111 75%), linear-gradient(-45deg, transparent 75%, #111 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      background-image: linear-gradient(45deg, #0d0d0d 25%, transparent 25%), linear-gradient(-45deg, #0d0d0d 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #0d0d0d 75%), linear-gradient(-45deg, transparent 75%, #0d0d0d 75%);
+      background-size: 20px 20px;
     }
 
-    /* Luxury inputs */
     input[type=range] { -webkit-appearance: none; background: transparent; }
-    input[type=range]::-webkit-slider-runnable-track { height: 2px; background: rgba(212, 175, 55, 0.1); border-radius: 1px; }
-    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 14px; width: 14px; border-radius: 50%; background: var(--gold-primary); margin-top: -6px; cursor: pointer; box-shadow: 0 0 10px rgba(212, 175, 55, 0.4); transition: transform 0.2s; }
-    input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.3); }
+    input[type=range]::-webkit-slider-runnable-track { height: 1px; background: rgba(212, 175, 55, 0.2); }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; border-radius: 50%; background: var(--gold); margin-top: -6px; cursor: pointer; }
 
-    .fade-up { animation: fadeUp 0.8s cubic-bezier(0.23, 1, 0.32, 1) forwards; }
-    @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
-
-    .color-btn { width: 28px; height: 28px; border-radius: 50%; border: 2px solid transparent; transition: all 0.3s; cursor: pointer; }
-    .color-btn:hover { transform: translateY(-3px); }
-    .color-btn.active { border-color: var(--gold-primary); box-shadow: 0 0 15px rgba(212, 175, 55, 0.3); }
-
-    .status-badge {
-      background: rgba(212, 175, 55, 0.1);
-      color: var(--gold-primary);
-      padding: 4px 12px;
-      border-radius: 100px;
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 0.1em;
-      border: 1px solid rgba(212, 175, 55, 0.2);
-    }
+    .nav-dot { width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.2); transition: all 0.3s; cursor: pointer; }
+    .nav-dot.active { background: var(--gold); height: 24px; border-radius: 4px; }
   </style>
 </head>
-<body class="p-6 md:p-12">
+<body class="overflow-x-hidden">
+
+  <!-- ─── Luxury Elements ─── -->
+  <div id="cursor" class="hidden md:block"></div>
+  <nav class="fixed left-8 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-4">
+    <div class="nav-dot active" onclick="scrollTo('hero')"></div>
+    <div class="nav-dot" onclick="scrollTo('features')"></div>
+    <div class="nav-dot" onclick="scrollTo('studio')"></div>
+  </nav>
 
   <!-- ─── Header ─── -->
-  <header class="max-w-7xl mx-auto flex justify-between items-center mb-12 fade-up">
-    <div class="flex items-center gap-4">
-      <div class="w-10 h-10 rounded-full flex items-center justify-center border border-gold-primary/30" style="background: linear-gradient(135deg, #D4AF37, #B8860B)">
-        <span class="text-black font-bold text-xl">A</span>
-      </div>
-      <h1 class="text-3xl font-light tracking-[0.2em] uppercase">Aura</h1>
+  <header class="fixed top-0 left-0 w-full p-10 flex justify-between items-center z-40 mix-blend-difference">
+    <div class="flex items-center gap-3">
+      <span class="text-2xl font-bold tracking-[0.4em] uppercase text-gold">Aura</span>
     </div>
-    <div id="connection-status" class="status-badge">AI Engine Online</div>
+    <div class="flex items-center gap-8 text-[10px] uppercase tracking-[0.3em] font-medium opacity-60">
+      <a href="#features" class="hover:text-gold transition-colors">Features</a>
+      <a href="#studio" class="hover:text-gold transition-colors">Studio</a>
+      <div class="h-px w-10 bg-white/20"></div>
+      <span>v2.0 Elite</span>
+    </div>
   </header>
 
-  <!-- ─── Initial Upload ─── -->
-  <div id="upload-state" class="max-w-3xl mx-auto mt-16 fade-up" style="animation-delay: 0.2s">
-    <div class="text-center mb-16">
-      <h2 class="text-5xl font-light mb-6 tracking-tight">Pure Precision. <br/><span class="font-bold italic text-gold-primary">Luxury Results.</span></h2>
-      <p class="text-white/40 text-lg font-light tracking-wide">Experience the world's most sophisticated background removal.</p>
-    </div>
+  <!-- ─── SECTION 1: HERO SCROLL ─── -->
+  <section id="hero" class="text-center overflow-hidden">
+     <div class="hero-3d-card relative z-10">
+       <h1 class="text-7xl md:text-9xl font-thin tracking-tighter mb-6 reveal">
+         Defining <span class="italic font-bold text-gold">Aesthetics</span>
+       </h1>
+       <p class="text-xl md:text-2xl font-light text-white/40 tracking-widest max-w-2xl mx-auto mb-12 reveal-delay">
+         Experience surgical precision with the world's most luxurious AI edge removal engine.
+       </p>
+       <button onclick="scrollTo('studio')" class="btn-lux px-16 py-5 rounded-full font-bold text-xs uppercase tracking-[0.3em] reveal-delay-2">
+         Enter Studio
+       </button>
+     </div>
+     
+     <!-- 3D Background Decoration -->
+     <div class="absolute inset-0 z-0 pointer-events-none">
+       <div class="absolute top-1/4 left-1/4 w-96 h-96 bg-gold/10 rounded-full blur-[120px] floating"></div>
+       <div class="absolute bottom-1/4 right-1/4 w-[500px] h-[500px] bg-purple-500/5 rounded-full blur-[150px] floating" style="animation-delay: -2s"></div>
+     </div>
+  </section>
 
-    <div id="drop-zone" class="glass rounded-[40px] p-20 flex flex-col items-center justify-center gap-10 cursor-pointer hover:bg-white/[0.04] transition-all group">
-      <div class="relative">
-        <div class="w-24 h-24 rounded-full border border-gold-primary/20 flex items-center justify-center text-4xl group-hover:scale-110 transition-transform duration-500">✨</div>
-        <div class="absolute -inset-4 rounded-full border border-gold-primary/10 animate-pulse"></div>
-      </div>
-      <div class="text-center">
-        <p class="text-2xl font-light tracking-wide mb-2">Drop Portrait or Object</p>
-        <p class="text-white/20 text-sm uppercase tracking-widest">Supports PNG, RAW, JPEG up to 10MB</p>
-      </div>
-      <button class="lux-grad px-12 py-4 rounded-full font-bold text-sm tracking-widest uppercase">Begin Processing</button>
-      <input type="file" id="file-input" class="hidden" accept="image/*" />
-    </div>
-  </div>
+  <!-- ─── SECTION 2: FEATURES SCROLL ─── -->
+  <section id="features" class="bg-[#080808]">
+     <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-12 w-full">
+        <div class="feature-card glass p-12 rounded-[40px] border-white/5 space-y-6 reveal-on-scroll">
+           <div class="text-4xl text-gold">⚡</div>
+           <h3 class="text-2xl font-bold tracking-tight">Surgery Speed</h3>
+           <p class="text-white/40 font-light leading-relaxed">High-performance AI processing that analyzes 4M+ pixels in milliseconds for a perfect cut.</p>
+        </div>
+        <div class="feature-card glass p-12 rounded-[40px] border-white/5 space-y-6 reveal-on-scroll" style="transition-delay: 100ms">
+           <div class="text-4xl text-gold">🖌️</div>
+           <h3 class="text-2xl font-bold tracking-tight">Precision Brush</h3>
+           <h4 class="text-[10px] text-gold uppercase tracking-[0.2em]">Latest Feature</h4>
+           <p class="text-white/40 font-light leading-relaxed">The manual Magic Brush handles complex hair and fine details with surgical precision.</p>
+        </div>
+        <div class="feature-card glass p-12 rounded-[40px] border-white/5 space-y-6 reveal-on-scroll" style="transition-delay: 200ms">
+           <div class="text-4xl text-gold">🌫️</div>
+           <h3 class="text-2xl font-bold tracking-tight">Optic Bokeh</h3>
+           <p class="text-white/40 font-light leading-relaxed">Sophisticated background blur adjustments to recreate high-end lens depth of field.</p>
+        </div>
+     </div>
+     
+     <div class="mt-32 text-center reveal-on-scroll">
+        <h2 class="text-5xl font-light tracking-wide mb-10">Crafted for <span class="italic">Professionals</span></h2>
+        <div class="flex flex-wrap justify-center gap-20 opacity-30">
+           <span class="text-sm tracking-[0.4em] uppercase">Architecture</span>
+           <span class="text-sm tracking-[0.4em] uppercase">Editorial</span>
+           <span class="text-sm tracking-[0.4em] uppercase">Automotive</span>
+        </div>
+     </div>
+  </section>
 
-  <!-- ─── Loading ─── -->
-  <div id="loading-state" class="hidden flex flex-col items-center justify-center mt-32">
-    <div class="relative w-24 h-24 mb-10">
-      <div class="absolute inset-0 rounded-full border-2 border-gold-primary/10"></div>
-      <div class="absolute inset-0 rounded-full border-2 border-transparent border-t-gold-primary animate-spin"></div>
-    </div>
-    <h2 class="text-3xl font-light tracking-widest uppercase mb-3">Refining...</h2>
-    <p class="text-white/30 text-sm italic">Our AI is analyzing light and edges for a perfect cut</p>
-  </div>
-
-  <!-- ─── Editor ─── -->
-  <div id="editor-state" class="hidden max-w-[1400px] mx-auto h-[78vh] grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-10 fade-up">
-    
-    <!-- Viewport Area -->
-    <div class="flex flex-col gap-6">
-      <div class="viewport glass rounded-[40px] transparent-pattern shadow-2xl" id="viewport">
-        <canvas id="main-canvas" class="editor-canvas"></canvas>
-        
-        <!-- Controls Floating -->
-        <div class="absolute bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-3 glass py-3 px-6 rounded-full shadow-2xl border-white/5">
-           <button id="tool-pan" title="Pan" class="p-3 rounded-full hover:bg-white/5 transition-all text-white/50 hover:text-gold-primary"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="m15 15-3-3-3 3"/><path d="m15 9-3 3-3-3"/></svg></button>
-           <div class="w-px h-8 bg-white/5 mx-1"></div>
-           <button id="tool-erase" title="Luxury Erase" class="p-3 rounded-full hover:bg-white/5 transition-all text-white/50 hover:text-gold-primary"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.9-9.9c1-1 2.5-1 3.4 0l4.3 4.3c1 1 1 2.5 0 3.4L10.8 21z"/><path d="m22 21-5-5"/><path d="m11 11 5 5"/></svg></button>
-           <button id="tool-restore" title="Luxury Restore" class="p-3 rounded-full hover:bg-white/5 transition-all text-white/50 hover:text-gold-primary"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
-           <div class="w-px h-8 bg-white/5 mx-1"></div>
-           <button id="btn-undo" class="p-3 rounded-full hover:bg-white/5 transition-all text-white/50"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 6.7 6.7 0 0 0-5 2.5L3 13"/></svg></button>
-           <div class="w-px h-8 bg-white/5 mx-2"></div>
-           <div class="flex items-center gap-1">
-             <button id="btn-zoom-out" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 text-xs">－</button>
-             <span class="text-[10px] font-medium tracking-widest w-12 text-center opacity-40 uppercase" id="zoom-text">100%</span>
-             <button id="btn-zoom-in" class="w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/5 text-xs">＋</button>
+  <!-- ─── SECTION 3: THE STUDIO (EDITOR) ─── -->
+  <section id="studio" class="p-0">
+     
+     <!-- Initial Upload Portal -->
+     <div id="upload-state" class="w-full max-w-4xl mx-auto flex flex-col items-center gap-12 py-20 reveal-on-scroll">
+        <div class="relative group cursor-pointer" onclick="document.getElementById('file-input').click()">
+           <div class="w-80 h-80 rounded-[60px] glass flex flex-col items-center justify-center gap-6 border-white/10 group-hover:border-gold/30 group-hover:bg-white/[0.03] transition-all duration-700">
+              <span class="text-5xl group-hover:scale-110 transition-transform duration-500">📥</span>
+              <p class="text-[10px] uppercase tracking-[0.4em] font-bold text-white/30">Drag to Process</p>
            </div>
+           <div class="absolute -inset-4 rounded-[70px] border border-gold/5 group-hover:border-gold/20 transition-all duration-700"></div>
         </div>
-      </div>
+        <input type="file" id="file-input" class="hidden" accept="image/*" />
+        <p class="text-white/20 text-[10px] uppercase tracking-[0.5em]">Highest Resolution Protected</p>
+     </div>
 
-      <div class="flex items-center justify-between px-4">
-        <button id="btn-restart" class="text-white/30 hover:text-gold-primary transition-colors text-xs uppercase tracking-[0.2em] flex items-center gap-3">
-          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 19-7-7 7-7"/><path d="M19 12H5"/></svg>
-          Discard & Restart
-        </button>
-        <div class="flex items-center gap-4">
-          <button id="btn-download-png" class="lux-outline px-8 py-3 rounded-full font-bold text-[10px] uppercase tracking-widest">Export PNG</button>
-          <button id="btn-download-jpg" class="lux-grad px-8 py-3 rounded-full font-bold text-[10px] uppercase tracking-widest">Save Luxury JPG</button>
+     <!-- Loading Portal -->
+     <div id="loading-state" class="hidden flex flex-col items-center gap-8 py-40">
+        <div class="w-16 h-16 rounded-full border-2 border-gold/10 border-t-gold animate-spin"></div>
+        <p class="text-gold uppercase tracking-[0.6em] text-xs animate-pulse">Analyzing Geometry</p>
+     </div>
+
+     <!-- Main Editor Portal -->
+     <div id="editor-state" class="hidden w-full max-w-[1700px] px-10 py-10 h-[90vh]">
+        <div class="editor-container">
+           <!-- Viewport -->
+           <div class="flex flex-col gap-6">
+              <div class="viewport glass transparent-pattern shadow-2xl flex-1" id="viewport">
+                 <canvas id="main-canvas" class="editor-canvas"></canvas>
+                 
+                 <!-- Tool Strip -->
+                 <div class="absolute bottom-10 left-1/2 -translate-x-1/2 flex items-center gap-4 glass py-4 px-8 rounded-full border-white/5">
+                    <button id="tool-pan" class="p-2 text-white/40 hover:text-gold transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="m15 15-3-3-3 3"/><path d="m15 9-3 3-3-3"/></svg></button>
+                    <div class="w-px h-6 bg-white/10"></div>
+                    <button id="tool-erase" class="p-2 text-white/40 hover:text-gold transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.9-9.9c1-1 2.5-1 3.4 0l4.3 4.3c1 1 1 2.5 0 3.4L10.8 21z"/><path d="m22 21-5-5"/><path d="m11 11 5 5"/></svg></button>
+                    <button id="tool-restore" class="p-2 text-white/40 hover:text-gold transition-colors"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18Z"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg></button>
+                    <div class="w-px h-6 bg-white/10"></div>
+                    <button id="btn-zoom-out" class="text-xs opacity-40">－</button>
+                    <span id="zoom-text" class="text-[9px] font-bold tracking-widest w-10 text-center">100%</span>
+                    <button id="btn-zoom-in" class="text-xs opacity-40">＋</button>
+                 </div>
+              </div>
+
+              <div class="flex items-center justify-between px-4">
+                 <button onclick="location.reload()" class="text-[10px] uppercase tracking-[0.4em] opacity-30 hover:opacity-100 transition-opacity">Discard Session</button>
+                 <div class="flex gap-4">
+                    <button id="btn-download-png" class="btn-lux px-10 py-3 rounded-full font-bold text-[9px] uppercase tracking-widest">Download PNG</button>
+                    <button id="btn-download-jpg" class="px-10 py-3 rounded-full border border-white/10 font-bold text-[9px] uppercase tracking-widest hover:bg-white/5">Download JPG</button>
+                 </div>
+              </div>
+           </div>
+
+           <!-- Control Side -->
+           <aside class="glass rounded-[40px] p-10 flex flex-col gap-12 overflow-y-auto">
+              <div>
+                 <h4 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-8 underline decoration-gold/30 underline-offset-8">Background</h4>
+                 <div class="grid grid-cols-5 gap-4 mb-10">
+                    <div class="w-full pt-[100%] rounded-full transparent-pattern cursor-pointer border border-white/5" onclick="app.setBg('transparent')"></div>
+                    <div class="w-full pt-[100%] rounded-full bg-white cursor-pointer" onclick="app.setBg('#fff')"></div>
+                    <div class="w-full pt-[100%] rounded-full bg-black border border-white/10 cursor-pointer" onclick="app.setBg('#000')"></div>
+                    <div class="w-full pt-[100%] rounded-full bg-[#D4AF37] cursor-pointer" onclick="app.setBg('#D4AF37')"></div>
+                    <div class="w-full pt-[100%] rounded-full bg-gradient-to-br from-gold to-gold-dim cursor-pointer" onclick="app.setBg('gradient')"></div>
+                 </div>
+                 <div class="space-y-4">
+                    <div class="flex justify-between text-[9px] uppercase tracking-widest text-white/40"><label>Focus Blur</label><span id="blur-val">0%</span></div>
+                    <input type="range" id="input-blur" class="w-full" min="0" max="40" value="0" />
+                 </div>
+              </div>
+
+              <div>
+                 <h4 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-8 underline decoration-gold/30 underline-offset-8">Brush Optics</h4>
+                 <div class="space-y-8">
+                    <div class="flex justify-between text-[9px] uppercase tracking-widest text-white/40"><label>Aperture Size</label><span id="brush-size-val">30px</span></div>
+                    <input type="range" id="input-brush-size" class="w-full" min="5" max="150" value="30" />
+                    <div class="flex justify-between text-[9px] uppercase tracking-widest text-white/40"><label>Soft Falloff</label><span id="brush-hard-val">0.5</span></div>
+                    <input type="range" id="input-brush-hard" class="w-full" min="0" max="1" step="0.1" value="0.5" />
+                 </div>
+              </div>
+
+              <div>
+                 <h4 class="text-[10px] font-bold uppercase tracking-[0.4em] text-white/20 mb-8 underline decoration-gold/30 underline-offset-8">Grading</h4>
+                 <div class="space-y-8">
+                    <div class="flex justify-between text-[9px] uppercase tracking-widest text-white/40"><label>Exposure</label><span id="bright-val">100%</span></div>
+                    <input type="range" id="input-bright" class="w-full" min="0" max="200" value="100" />
+                    <div class="flex justify-between text-[9px] uppercase tracking-widest text-white/40"><label>Contrast</label><span id="contrast-val">100%</span></div>
+                    <input type="range" id="input-contrast" class="w-full" min="0" max="200" value="100" />
+                 </div>
+              </div>
+           </aside>
         </div>
-      </div>
-    </div>
+     </div>
 
-    <!-- Sidebar Tools -->
-    <aside class="glass rounded-[40px] p-8 flex flex-col gap-10 overflow-y-auto border-white/[0.03]">
-      
-      <!-- Section: Background -->
-      <section>
-        <div class="flex items-center justify-between mb-6">
-          <h3 class="text-[11px] font-bold text-white/20 uppercase tracking-[0.3em]">Background</h3>
-          <div class="flex gap-2">
-            <button class="w-2 h-2 rounded-full bg-gold-primary"></button>
-            <button class="w-2 h-2 rounded-full bg-white/10"></button>
-          </div>
-        </div>
+  </section>
 
-        <div class="grid grid-cols-5 gap-3 mb-8">
-          <div class="color-btn transparent-pattern" onclick="app.setBg('transparent')" title="Transparent"></div>
-          <div class="color-btn bg-white" onclick="app.setBg('#ffffff')" title="Pure White"></div>
-          <div class="color-btn bg-black border border-white/10" onclick="app.setBg('#000000')" title="Deep Black"></div>
-          <div class="color-btn bg-[#F5F5DC]" onclick="app.setBg('#F5F5DC')" title="Champagne"></div>
-          <div class="color-btn bg-[#1A1A1A]" onclick="app.setBg('#1A1A1A')" title="Anthracite"></div>
-          <div class="color-btn bg-gradient-to-br from-[#D4AF37] to-[#8B4513]" onclick="app.setBg('linear-gradient(135deg, #D4AF37, #8B4513)')" title="Silk Gold"></div>
-          <div class="color-btn bg-gradient-to-br from-[#121212] to-[#333]" onclick="app.setBg('linear-gradient(135deg, #121212, #333333)')" title="Dark Obsidian"></div>
-        </div>
-
-        <div class="space-y-6">
-          <div>
-            <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/30 mb-4">
-              <label>Depth of Field</label>
-              <span id="blur-val">0%</span>
-            </div>
-            <input type="range" id="input-blur" class="w-full" min="0" max="40" value="0" />
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Brush -->
-      <section>
-        <h3 class="text-[11px] font-bold text-white/20 uppercase tracking-[0.3em] mb-6">Precision</h3>
-        <div class="space-y-6">
-          <div>
-            <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/30 mb-4">
-              <label>Aperture Size</label>
-              <span id="brush-size-val">30px</span>
-            </div>
-            <input type="range" id="input-brush-size" class="w-full" min="5" max="100" value="30" />
-          </div>
-          <div>
-            <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/30 mb-4">
-              <label>Edge Softness</label>
-              <span id="brush-hard-val">0.5</span>
-            </div>
-            <input type="range" id="input-brush-hard" class="w-full" min="0" max="1" step="0.1" value="0.5" />
-          </div>
-        </div>
-      </section>
-
-      <!-- Section: Adjust -->
-      <section>
-        <h3 class="text-[11px] font-bold text-white/20 uppercase tracking-[0.3em] mb-6">Visual Grade</h3>
-        <div class="space-y-6">
-          <div>
-            <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/30 mb-4"><label>Luminance</label><span id="bright-val">100%</span></div>
-            <input type="range" id="input-bright" class="w-full" min="0" max="200" value="100" />
-          </div>
-          <div>
-            <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/30 mb-4"><label>Tone Contrast</label><span id="contrast-val">100%</span></div>
-            <input type="range" id="input-contrast" class="w-full" min="0" max="200" value="100" />
-          </div>
-          <div>
-            <div class="flex justify-between text-[10px] uppercase tracking-widest text-white/30 mb-4"><label>Vibrance</label><span id="sat-val">100%</span></div>
-            <input type="range" id="input-sat" class="w-full" min="0" max="200" value="100" />
-          </div>
-        </div>
-      </section>
-
-    </aside>
-  </div>
-
-  <!-- ─── Scripts (Logic remains consistent, UI refined) ─── -->
+  <!-- ─── Core JS ─── -->
   <script>
+    // --- 1. UX Interactivity ---
+    function scrollTo(id) {
+       document.getElementById(id).scrollIntoView({ behavior: 'smooth' });
+    }
+
+    // GSAP Scroll Animations
+    gsap.registerPlugin(ScrollTrigger);
+
+    gsap.from(".reveal", { opacity: 0, y: 50, duration: 1.5, stagger: 0.3, ease: "power4.out" });
+    gsap.from(".reveal-delay", { opacity: 0, y: 30, duration: 1.5, delay: 0.5, ease: "power4.out" });
+    gsap.from(".reveal-delay-2", { opacity: 0, scale: 0.8, duration: 1.5, delay: 0.8, ease: "back.out(1.7)" });
+
+    document.querySelectorAll(".reveal-on-scroll").forEach(el => {
+       gsap.from(el, {
+          scrollTrigger: { trigger: el, start: "top 90%" },
+          opacity: 0, y: 60, duration: 1.2, ease: "power3.out"
+       });
+    });
+
+    // Custom Cursor tracking
+    const cursor = document.getElementById('cursor');
+    document.addEventListener('mousemove', (e) => {
+       cursor.style.transform = `translate(${e.clientX - 20}px, ${e.clientY - 20}px)`;
+    });
+
+    // Dot Navigation tracking
+    window.addEventListener('scroll', () => {
+       const sections = ['hero', 'features', 'studio'];
+       const scrollPos = window.scrollY + window.innerHeight / 2;
+       sections.forEach((id, idx) => {
+          const el = document.getElementById(id);
+          if (scrollPos >= el.offsetTop && scrollPos < el.offsetTop + el.offsetHeight) {
+             document.querySelectorAll('.nav-dot').forEach(dot => dot.classList.remove('active'));
+             document.querySelectorAll('.nav-dot')[idx].classList.add('active');
+          }
+       });
+    });
+
+    // --- 2. Editor Core ---
     class ImageEditor {
       constructor() {
         this.canvas = document.getElementById('main-canvas');
@@ -280,105 +289,80 @@
         this.maskCtx = this.maskBuffer.getContext('2d', { willReadFrequently: true });
         
         this.state = {
-          zoom: 1,
-          pan: { x: 0, y: 0 },
+          zoom: 1, pan: { x: 0, y: 0 },
           tool: 'erase', 
-          brushSize: 30,
-          brushHardness: 0.5,
-          bgColor: 'transparent',
-          bgBlur: 0,
-          brightness: 100,
-          contrast: 100,
-          saturation: 100,
-          isDragging: false,
-          lastPoint: null
+          brushSize: 30, brushHardness: 0.5,
+          bgColor: 'transparent', bgBlur: 0,
+          brightness: 100, contrast: 100, saturation: 100,
+          isDragging: false, lastPoint: null
         };
 
         this.init();
       }
 
       init() {
-        // Drag/Drop
-        const dropZone = document.getElementById('drop-zone');
+        // UI Binds
         const fileInput = document.getElementById('file-input');
-
-        dropZone.onclick = () => fileInput.click();
         fileInput.onchange = (e) => this.handleUpload(e.target.files[0]);
-        
-        dropZone.ondragover = (e) => { e.preventDefault(); dropZone.classList.add('glass-active'); };
-        dropZone.ondragleave = () => dropZone.classList.remove('glass-active');
-        dropZone.ondrop = (e) => { e.preventDefault(); this.handleUpload(e.dataTransfer.files[0]); };
 
-        // Tools
         document.getElementById('tool-pan').onclick = () => this.setTool('pan');
         document.getElementById('tool-erase').onclick = () => this.setTool('erase');
         document.getElementById('tool-restore').onclick = () => this.setTool('restore');
         
-        document.getElementById('btn-zoom-in').onclick = () => this.setZoom(this.state.zoom * 1.2);
-        document.getElementById('btn-zoom-out').onclick = () => this.setZoom(this.state.zoom / 1.2);
-        document.getElementById('btn-restart').onclick = () => location.reload();
+        document.getElementById('btn-zoom-in').onclick = () => this.setZoom(this.state.zoom * 1.3);
+        document.getElementById('btn-zoom-out').onclick = () => this.setZoom(this.state.zoom / 1.3);
 
-        // Sliders
-        const bindSlider = (id, stateKey, displayId, suffix = '') => {
-            const slider = document.getElementById(id);
-            const display = document.getElementById(displayId);
-            slider.oninput = (e) => {
-                this.state[stateKey] = parseFloat(e.target.value);
-                if(display) display.innerText = this.state[stateKey] + suffix;
-                this.render();
-            };
+        const bind = (id, key, disp, suf='') => {
+           const el = document.getElementById(id);
+           el.oninput = (e) => {
+              this.state[key] = parseFloat(e.target.value);
+              document.getElementById(disp).innerText = this.state[key] + suf;
+              this.render();
+           };
         };
+        bind('input-blur', 'bgBlur', 'blur-val', '%');
+        bind('input-brush-size', 'brushSize', 'brush-size-val', 'px');
+        bind('input-brush-hard', 'brushHardness', 'brush-hard-val');
+        bind('input-bright', 'brightness', 'bright-val', '%');
+        bind('input-contrast', 'contrast', 'contrast-val', '%');
 
-        bindSlider('input-blur', 'bgBlur', 'blur-val', '%');
-        bindSlider('input-brush-size', 'brushSize', 'brush-size-val', 'px');
-        bindSlider('input-brush-hard', 'brushHardness', 'brush-hard-val');
-        bindSlider('input-bright', 'brightness', 'bright-val', '%');
-        bindSlider('input-contrast', 'contrast', 'contrast-val', '%');
-        bindSlider('input-sat', 'saturation', 'sat-val', '%');
-
-        // Canvas events
         this.canvas.onmousedown = (e) => this.onStart(e);
         window.onmousemove = (e) => this.onMove(e);
         window.onmouseup = () => this.onEnd();
         
-        // Export
         document.getElementById('btn-download-png').onclick = () => this.export('png');
         document.getElementById('btn-download-jpg').onclick = () => this.export('jpg');
       }
 
       async handleUpload(file) {
-        if (!file) return;
-        document.getElementById('upload-state').style.display = 'none';
+        if(!file) return;
+        document.getElementById('upload-state').classList.add('hidden');
         document.getElementById('loading-state').classList.remove('hidden');
 
-        const formData = new FormData();
-        formData.append('image', file);
+        const fd = new FormData();
+        fd.append('image', file);
 
         try {
-          const res = await fetch('/remove-bg', { method: 'POST', body: formData });
+          const res = await fetch('/remove-bg', { method: 'POST', body: fd });
           const data = await res.json();
-          if (!data.success) throw new Error(data.error);
+          if(!data.success) throw new Error(data.error);
           await this.initEditor(file, data.image);
-        } catch (err) {
+        } catch(err) {
           alert('System Error: ' + err.message);
-          document.getElementById('upload-state').style.display = 'block';
-          document.getElementById('loading-state').classList.add('hidden');
+          location.reload();
         }
       }
 
       async initEditor(originalFile, transparentB64) {
-        const originalUrl = URL.createObjectURL(originalFile);
-        await new Promise(r => { this.originalImg.onload = r; this.originalImg.src = originalUrl; });
-        
-        const resultImg = new Image();
-        await new Promise(r => { resultImg.onload = r; resultImg.src = transparentB64; });
+        const url = URL.createObjectURL(originalFile);
+        await new Promise(r => { this.originalImg.onload = r; this.originalImg.src = url; });
+        const resImg = new Image();
+        await new Promise(r => { resImg.onload = r; resImg.src = transparentB64; });
 
-        this.canvas.width = this.originalImg.width;
-        this.canvas.height = this.originalImg.height;
-        this.maskBuffer.width = this.originalImg.width;
-        this.maskBuffer.height = this.originalImg.height;
+        this.canvas.width = this.maskBuffer.width = this.originalImg.width;
+        this.canvas.height = this.maskBuffer.height = this.originalImg.height;
 
-        this.maskCtx.drawImage(resultImg, 0, 0);
+        this.maskCtx.drawImage(resImg, 0, 0);
         
         document.getElementById('loading-state').classList.add('hidden');
         document.getElementById('editor-state').classList.remove('hidden');
@@ -387,48 +371,43 @@
         this.render();
       }
 
-      setTool(name) {
-        this.state.tool = name;
+      setTool(t) {
+        this.state.tool = t;
         ['tool-pan', 'tool-erase', 'tool-restore'].forEach(id => {
-          document.getElementById(id).classList.toggle('glass-active', id === 'tool-' + name);
+           document.getElementById(id).classList.toggle('text-gold', id==='tool-'+t);
+           document.getElementById(id).classList.toggle('text-white/40', id!=='tool-'+t);
         });
       }
 
-      setZoom(val) {
-        if (val === 'fit') {
-          const vp = document.getElementById('viewport');
-          const ratioX = (vp.clientWidth - 80) / this.canvas.width;
-          const ratioY = (vp.clientHeight - 80) / this.canvas.height;
-          this.state.zoom = Math.min(ratioX, ratioY, 1);
+      setZoom(v) {
+        if(v==='fit') {
+           const vp = document.getElementById('viewport');
+           this.state.zoom = Math.min((vp.clientWidth - 100)/this.canvas.width, (vp.clientHeight - 100)/this.canvas.height, 1);
         } else {
-          this.state.zoom = Math.max(0.05, Math.min(10, val));
+           this.state.zoom = Math.max(0.02, Math.min(10, v));
         }
-        document.getElementById('zoom-text').innerText = Math.round(this.state.zoom * 100) + '%';
+        document.getElementById('zoom-text').innerText = Math.round(this.state.zoom*100)+'%';
         this.render();
       }
 
-      setBg(color) {
-        this.state.bgColor = color;
-        this.render();
-      }
+      setBg(val) { this.state.bgColor = val; this.render(); }
 
       onStart(e) {
         this.state.isDragging = true;
         const pos = this.getCanvasPos(e);
-        if (this.state.tool !== 'pan') this.drawBrush(pos);
+        if(this.state.tool!=='pan') this.drawBrush(pos);
         this.state.lastPoint = pos;
       }
 
       onMove(e) {
-        if (!this.state.isDragging) return;
+        if(!this.state.isDragging) return;
         const rect = this.canvas.getBoundingClientRect();
         const pos = this.getCanvasPos(e);
-        
-        if (this.state.tool === 'pan') {
-          this.state.pan.x += (e.clientX - rect.left - (this.state.lastPoint.rawX - rect.left));
-          this.state.pan.y += (e.clientY - rect.top - (this.state.lastPoint.rawY - rect.top));
+        if(this.state.tool==='pan') {
+           this.state.pan.x += (e.clientX - rect.left - (this.state.lastPoint.rawX - rect.left));
+           this.state.pan.y += (e.clientY - rect.top - (this.state.lastPoint.rawY - rect.top));
         } else {
-          this.drawBrush(pos);
+           this.drawBrush(pos);
         }
         this.state.lastPoint = { ...pos, rawX: e.clientX, rawY: e.clientY };
         this.render();
@@ -441,8 +420,7 @@
         return {
           x: (e.clientX - rect.left) / this.state.zoom,
           y: (e.clientY - rect.top) / this.state.zoom,
-          rawX: e.clientX,
-          rawY: e.clientY
+          rawX: e.clientX, rawY: e.clientY
         };
       }
 
@@ -451,71 +429,58 @@
         ctx.save();
         ctx.beginPath();
         ctx.arc(pos.x, pos.y, this.state.brushSize / 2, 0, Math.PI * 2);
-        
-        if (this.state.tool === 'erase') {
-          ctx.globalCompositeOperation = 'destination-out';
-          ctx.fill();
-        } else if (this.state.tool === 'restore') {
-          ctx.globalCompositeOperation = 'source-over';
-          ctx.clip();
-          ctx.drawImage(this.originalImg, 0, 0);
+        if(this.state.tool==='erase') {
+           ctx.globalCompositeOperation = 'destination-out';
+           ctx.fill();
+        } else {
+           ctx.globalCompositeOperation = 'source-over';
+           ctx.clip();
+           ctx.drawImage(this.originalImg, 0, 0);
         }
         ctx.restore();
       }
 
       render() {
-        this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-
-        // BG with simple blur simulation
-        if (this.state.bgColor !== 'transparent') {
-          this.ctx.save();
-          if (this.state.bgColor.startsWith('linear')) {
-             const g = this.ctx.createLinearGradient(0,0,this.canvas.width, this.canvas.height);
-             g.addColorStop(0, '#D4AF37'); g.addColorStop(1, '#8B4513');
-             this.ctx.fillStyle = g;
-          } else {
-            this.ctx.fillStyle = this.state.bgColor;
-          }
-          this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
-          this.ctx.restore();
+        this.ctx.clearRect(0,0,this.canvas.width, this.canvas.height);
+        if(this.state.bgColor!=='transparent') {
+           this.ctx.save();
+           if(this.state.bgColor==='gradient') {
+              const g = this.ctx.createLinearGradient(0,0,this.canvas.width, this.canvas.height);
+              g.addColorStop(0, '#D4AF37'); g.addColorStop(1, '#8B4513');
+              this.ctx.fillStyle = g;
+           } else {
+              this.ctx.fillStyle = this.state.bgColor;
+           }
+           this.ctx.fillRect(0,0,this.canvas.width, this.canvas.height);
+           this.ctx.restore();
         }
-
         this.ctx.save();
-        this.ctx.filter = `brightness(${this.state.brightness}%) contrast(${this.state.contrast}%) saturate(${this.state.saturation}%)`;
+        this.ctx.filter = `brightness(${this.state.brightness}%) contrast(${this.state.contrast}%)`;
         this.ctx.drawImage(this.maskBuffer, 0, 0);
         this.ctx.restore();
-
         this.canvas.style.transform = `translate(calc(-50% + ${this.state.pan.x}px), calc(-50% + ${this.state.pan.y}px)) scale(${this.state.zoom})`;
       }
 
-      export(format) {
-        const exportCanvas = document.createElement('canvas');
-        exportCanvas.width = this.canvas.width;
-        exportCanvas.height = this.canvas.height;
-        const eCtx = exportCanvas.getContext('2d');
-
-        if (this.state.bgColor !== 'transparent') {
-          if (this.state.bgColor.startsWith('linear')) {
-            const g = eCtx.createLinearGradient(0,0,exportCanvas.width, exportCanvas.height);
-            g.addColorStop(0, '#D4AF37'); g.addColorStop(1, '#8B4513');
-            eCtx.fillStyle = g;
-          } else {
-             eCtx.fillStyle = this.state.bgColor;
-          }
-          if (format === 'jpg' && this.state.bgColor === 'transparent') eCtx.fillStyle = '#ffffff';
-          eCtx.fillRect(0, 0, exportCanvas.width, exportCanvas.height);
+      export(fmt) {
+        const exp = document.createElement('canvas');
+        exp.width = this.canvas.width; exp.height = this.canvas.height;
+        const eCtx = exp.getContext('2d');
+        if(this.state.bgColor!=='transparent') {
+           if(this.state.bgColor==='gradient') {
+              const g = eCtx.createLinearGradient(0,0,exp.width, exp.height);
+              g.addColorStop(0, '#D4AF37'); g.addColorStop(1, '#8B4513');
+              eCtx.fillStyle = g;
+           } else { eCtx.fillStyle = this.state.bgColor; }
+           eCtx.fillRect(0,0,exp.width, exp.height);
         }
-        
-        eCtx.filter = `brightness(${this.state.brightness}%) contrast(${this.state.contrast}%) saturate(${this.state.saturation}%)`;
+        eCtx.filter = `brightness(${this.state.brightness}%) contrast(${this.state.contrast}%)`;
         eCtx.drawImage(this.maskBuffer, 0, 0);
-
-        const link = document.createElement('a');
-        link.download = `aura-export-${Date.now()}.${format}`;
-        link.href = exportCanvas.toDataURL(`image/${format === 'png' ? 'png' : 'jpeg'}`, 1.0);
-        link.click();
+        const l = document.createElement('a');
+        l.download = `aura-pro-${Date.now()}.${fmt}`;
+        l.href = exp.toDataURL(`image/${fmt==='png'?'png':'jpeg'}`, 1.0);
+        l.click();
       }
     }
-
     const app = new ImageEditor();
   </script>
 </body>
