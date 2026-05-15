@@ -440,29 +440,27 @@
       }
 
       async verifyOTP() {
-        const otp = this.otpInput.value;
+        const otp = this.otpInput.value.trim();
         if (!otp || otp.length < 6) return alert('Enter full 6-digit code');
-        console.log('[AUTH] Verifying code:', otp);
+        const email = this.email || localStorage.getItem('aura_email_pending');
         
         try {
           const res = await fetch('/api/auth/verify-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: this.email || localStorage.getItem('aura_email'), otp })
+            body: JSON.stringify({ email, otp })
           });
           const data = await res.json();
           if (data.success) {
-             console.log('[AUTH] Verification successful');
              localStorage.setItem('aura_token', data.token);
-             localStorage.setItem('aura_email', this.email || localStorage.getItem('aura_email_pending'));
+             localStorage.setItem('aura_email', email);
              localStorage.removeItem('aura_email_pending');
              this.unlock();
              gsap.to(this.overlay, { opacity: 0, scale: 1.1, duration: 1, ease: 'power4.in', onComplete: () => this.overlay.remove() });
           } else {
-             console.warn('[AUTH] Verification failed:', data.error);
-             throw new Error(data.error);
+             alert(`Invalid: ${data.error}`);
           }
-        } catch (e) { alert(e.message); }
+        } catch (e) { alert('Verification Error. Try again.'); }
       }
     }
     new AuraAuth();
