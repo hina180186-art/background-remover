@@ -9,4 +9,7 @@ module.exports = {
 
   // Max upload size in MB
   MAX_FILE_SIZE_MB: 10,
+
+  // SMTP Settings
+  SMTP_FROM: process.env.SMTP_FROM || '"Aura Elite+ Authenticator" <auth@aura-elite.pro>',
 };

@@ -3,6 +3,7 @@
  * Uses Remove.bg API for reliable background removal.
  */
 
+require('dotenv').config();
 const express = require("express");
 const multer = require("multer");
 const axios = require("axios");
@@ -48,6 +49,15 @@ const upload = multer({
 // ─── Middleware ──────────────────────────────────────────────────
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+// Block sensitive files from being served statically
+app.use((req, res, next) => {
+  if (req.url.includes('config.js') || req.url.includes('.env')) {
+    return res.status(403).json({ error: 'Access Denied' });
+  }
+  next();
+});
+
 app.use(express.static(path.join(__dirname)));
 
 // ─── Authentication Engine ──────────────────────────────────────
@@ -70,14 +80,14 @@ const transporter = nodemailer.createTransport(
 
 // Route: Send OTP
 app.post('/api/auth/send-otp', async (req, res) => {
-  const { email } = req.body;
+  const email = (req.body.email || '').trim().toLowerCase();
   if (!email) return res.status(400).json({ success: false, error: 'Email required' });
 
   const otp = Math.floor(100000 + Math.random() * 900000).toString();
-  otpStore.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 }); // 10 min expiry
+  otpStore.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 }); 
 
   const mailOptions = {
-    from: '"Aura Elite+ Authenticator" <auth@aura-elite.pro>',
+    from: '"Aura Elite+" <onboarding@resend.dev>',
     to: email,
     subject: 'Your Aura Elite+ Access Code',
     text: `Your luxury access code is: ${otp}. It expires in 10 minutes.`,
@@ -92,27 +102,39 @@ app.post('/api/auth/send-otp', async (req, res) => {
   };
 
   try {
-    const info = await transporter.sendMail(mailOptions);
-    if (!process.env.SMTP_HOST) {
+    // Always log OTP in development for easier testing
+    if (process.env.NODE_ENV !== 'production') {
       console.log('----------------------------------------------------');
-      console.log(`🔑  OTP for ${email}: ${otp}`);
+      console.log(`🔑  OTP for ${email}: ${otp} (FROM: ${config.SMTP_FROM})`);
       console.log('----------------------------------------------------');
     }
-    res.json({ success: true, message: 'OTP sent' });
+
+    if (process.env.SMTP_HOST) {
+       await transporter.sendMail(mailOptions);
+       console.log(`[AUTH] OTP ${otp} sent to ${email}`);
+       return res.json({ success: true, message: 'OTP sent' });
+    } else {
+       console.warn(`[AUTH] No SMTP_HOST found. OTP ${otp} logged in console.`);
+       return res.json({ success: true, message: `OTP generated (Check Dev Console)` });
+    }
   } catch (err) {
     console.error('Email error:', err);
-    res.status(500).json({ success: false, error: 'Failed to send email' });
+    return res.status(500).json({ success: false, error: 'Failed to deliver essence code.' });
   }
 });
 
 // Route: Verify OTP
 app.post('/api/auth/verify-otp', (req, res) => {
-  const { email, otp } = req.body;
+  const email = (req.body.email || '').trim().toLowerCase();
+  const otp = (req.body.otp || '').trim();
   const stored = otpStore.get(email);
 
+  console.log(`[AUTH] Verification attempt for ${email}. Entered: ${otp}, Stored: ${stored?.otp}`);
+
   if (stored && stored.otp === otp && stored.expires > Date.now()) {
-    otpStore.delete(email); // One-time use
+    otpStore.delete(email); 
     const token = jwt.sign({ email }, JWT_SECRET, { expiresIn: '24h' });
+    console.log(`[AUTH] Session granted for ${email}`);
     res.json({ success: true, token });
   } else {
     res.status(400).json({ success: false, error: 'Invalid or expired code' });

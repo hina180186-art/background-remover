@@ -136,13 +136,13 @@
            <input type="text" id="auth-otp" maxlength="6" placeholder="000000" class="bg-transparent border-b-2 border-gold/20 text-4xl text-center w-48 focus:outline-none focus:border-gold transition-all tracking-[0.5em] font-thin" />
         </div>
         <button id="btn-verify-otp" class="btn-aura w-full text-[10px] py-5">Initialize Aura</button>
-        <button onclick="location.reload()" class="text-[9px] lux-text text-white/20 hover:text-gold block mx-auto">Restart</button>
+        <button onclick="localStorage.clear(); location.reload();" class="text-[9px] lux-text text-white/20 hover:text-gold block mx-auto underline mt-4">Reset Authentication</button>
       </div>
     </div>
   </div>
 
   <!-- Entire App Container: Hidden until Auth -->
-  <div id="app-container" class="opacity-0 pointer-events-none transition-opacity duration-1000">
+  <div id="app-container" class="hidden transition-opacity duration-1000">
     <div id="cursor-ring" class="hidden md:block"></div>
   
   <!-- Navigation -->
@@ -160,9 +160,12 @@
       </div>
       <h1 class="lux-text text-2xl gold-glow text-white/90">Aura Elite+</h1>
     </div>
-    <div class="status-indicator flex items-center gap-2">
-       <span class="w-1.5 h-1.5 bg-gold rounded-full animate-pulse"></span>
-       <span class="lux-text text-[10px] text-gold/60">Quantum Edge v2.5</span>
+    <div class="status-indicator flex items-center gap-6">
+       <div class="flex items-center gap-2">
+          <span class="w-1.5 h-1.5 bg-gold rounded-full animate-pulse"></span>
+          <span class="lux-text text-[10px] text-gold/60">Quantum Edge v2.5</span>
+       </div>
+       <button id="btn-logout" class="lux-text text-[9px] text-white/40 hover:text-white transition-colors border border-white/10 px-4 py-1.5 rounded-full hover:border-gold/30">Sign Out</button>
     </div>
   </header>
 
@@ -353,10 +356,26 @@
         this.emailInput = document.getElementById('auth-email');
         this.otpInput = document.getElementById('auth-otp');
         this.token = localStorage.getItem('aura_token');
-        this.email = localStorage.getItem('aura_email') || '';
-
-        if (this.token) this.checkToken();
+        this.email = localStorage.getItem('aura_email') || localStorage.getItem('aura_email_pending') || '';
+        
+        if (this.token) {
+          this.checkToken();
+        } else {
+          this.showOverlay();
+        }
         this.init();
+      }
+
+      showOverlay() {
+        this.overlay.classList.remove('hidden');
+        document.body.classList.add('no-scroll-auth');
+        document.getElementById('app-container').classList.add('hidden');
+        
+        // If we have a pending email, skip to OTP stage
+        if (localStorage.getItem('aura_email_pending')) {
+           document.getElementById('auth-stage-email').classList.add('hidden');
+           document.getElementById('auth-stage-otp').classList.remove('hidden');
+        }
       }
 
       async checkToken() {
@@ -367,24 +386,38 @@
           if (res.ok) {
             this.unlock();
           } else {
+            console.warn('[AUTH] Token invalid or expired');
             localStorage.removeItem('aura_token');
-            location.reload();
+            this.showOverlay();
           }
         } catch (e) { console.error('Auth Check Failed'); }
       }
 
       unlock() {
+        console.log('[AUTH] Token Verified. Unlocking Studio...');
         this.overlay.classList.add('hidden');
         document.body.classList.remove('no-scroll-auth');
         const container = document.getElementById('app-container');
-        container.classList.remove('opacity-0', 'pointer-events-none');
-        container.classList.add('opacity-100');
+        container.classList.remove('hidden');
+        container.classList.add('opacity-0');
+        requestAnimationFrame(() => {
+          container.classList.add('opacity-100');
+        });
         gsap.from(".hero-reveal > *", { opacity: 0, y: 30, stagger: 0.2, duration: 1.5, ease: "power4.out" });
       }
 
       init() {
         document.getElementById('btn-send-otp').onclick = () => this.sendOTP();
         document.getElementById('btn-verify-otp').onclick = () => this.verifyOTP();
+        const logoutBtn = document.getElementById('btn-logout');
+        if (logoutBtn) logoutBtn.onclick = () => this.logout();
+      }
+
+      logout() {
+        localStorage.removeItem('aura_token');
+        localStorage.removeItem('aura_email');
+        localStorage.removeItem('aura_email_pending');
+        location.reload();
       }
 
       async sendOTP() {
@@ -399,6 +432,7 @@
           });
           const data = await res.json();
           if (data.success) {
+            localStorage.setItem('aura_email_pending', this.email);
             document.getElementById('auth-stage-email').classList.add('hidden');
             document.getElementById('auth-stage-otp').classList.remove('hidden');
           } else throw new Error(data.error);
@@ -408,6 +442,7 @@
       async verifyOTP() {
         const otp = this.otpInput.value;
         if (!otp || otp.length < 6) return alert('Enter full 6-digit code');
+        console.log('[AUTH] Verifying code:', otp);
         
         try {
           const res = await fetch('/api/auth/verify-otp', {
@@ -417,11 +452,16 @@
           });
           const data = await res.json();
           if (data.success) {
+             console.log('[AUTH] Verification successful');
              localStorage.setItem('aura_token', data.token);
-             localStorage.setItem('aura_email', this.email);
+             localStorage.setItem('aura_email', this.email || localStorage.getItem('aura_email_pending'));
+             localStorage.removeItem('aura_email_pending');
              this.unlock();
              gsap.to(this.overlay, { opacity: 0, scale: 1.1, duration: 1, ease: 'power4.in', onComplete: () => this.overlay.remove() });
-          } else throw new Error(data.error);
+          } else {
+             console.warn('[AUTH] Verification failed:', data.error);
+             throw new Error(data.error);
+          }
         } catch (e) { alert(e.message); }
       }
     }
