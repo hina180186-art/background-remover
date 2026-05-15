@@ -114,7 +114,7 @@
   </style>
 
   <!-- ─── Authentication Overlay ─── -->
-  <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-3xl px-6">
+  <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black backdrop-blur-3xl px-6">
     <div class="max-w-md w-full glass p-12 rounded-[50px] text-center border-gold/20 shadow-[-20px_-20px_60px_rgba(255,255,255,0.01),20px_20px_60px_rgba(0,0,0,0.5)]">
       <div class="w-16 h-16 border border-gold/30 mx-auto mb-10 transform rotate-45 flex items-center justify-center bg-gold/5">
         <span class="text-gold font-bold -rotate-45 text-2xl">A</span>
@@ -141,7 +141,9 @@
     </div>
   </div>
 
-  <div id="cursor-ring" class="hidden md:block"></div>
+  <!-- Entire App Container: Hidden until Auth -->
+  <div id="app-container" class="opacity-0 pointer-events-none transition-opacity duration-1000">
+    <div id="cursor-ring" class="hidden md:block"></div>
   
   <!-- Navigation -->
   <nav class="fixed right-10 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-6">
@@ -326,9 +328,8 @@
              </div>
 
           </aside>
-       </div>
-    </div>
-
+      </div>
+    </div> <!-- End app-container -->
   </section>
 
   <style>
@@ -354,11 +355,17 @@
         this.token = localStorage.getItem('aura_token');
         this.email = '';
 
-        if (this.token) {
-          this.overlay.classList.add('hidden');
-          document.body.classList.remove('no-scroll-auth');
-        }
+        if (this.token) this.unlock();
         this.init();
+      }
+
+      unlock() {
+        this.overlay.classList.add('hidden');
+        document.body.classList.remove('no-scroll-auth');
+        const container = document.getElementById('app-container');
+        container.classList.remove('opacity-0', 'pointer-events-none');
+        container.classList.add('opacity-100');
+        gsap.from(".hero-reveal > *", { opacity: 0, y: 30, stagger: 0.2, duration: 1.5, ease: "power4.out" });
       }
 
       init() {
@@ -395,7 +402,7 @@
           const data = await res.json();
           if (data.success) {
              localStorage.setItem('aura_token', data.token);
-             document.body.classList.remove('no-scroll-auth');
+             this.unlock();
              gsap.to(this.overlay, { opacity: 0, scale: 1.1, duration: 1, ease: 'power4.in', onComplete: () => this.overlay.remove() });
           } else throw new Error(data.error);
         } catch (e) { alert(e.message); }
@@ -414,8 +421,6 @@
 
     // Reveal Animations
     window.onload = () => {
-       gsap.from(".hero-reveal > *", { opacity: 0, y: 30, stagger: 0.2, duration: 1.5, ease: "power4.out" });
-       
        document.querySelectorAll(".reveal-on-scroll").forEach(el => {
           gsap.from(el, {
              scrollTrigger: { trigger: el, start: "top 90%" },
@@ -534,13 +539,23 @@
       }
 
       async initEditor(file, transparent) {
+        console.log('Initializing Elite Studio...');
         const url = URL.createObjectURL(file);
         await new Promise(r => { this.originalImg.onload = r; this.originalImg.src = url; });
+        console.log('Original Image Loaded:', this.originalImg.width, 'x', this.originalImg.height);
+        
         const resImg = new Image();
-        await new Promise(r => { resImg.onload = r; resImg.src = transparent; });
+        resImg.crossOrigin = "anonymous";
+        await new Promise((r, rej) => { 
+          resImg.onload = r; 
+          resImg.onerror = (e) => { console.error('Transparent Image Load Failed'); rej(e); };
+          resImg.src = transparent; 
+        });
+        console.log('Transparent Image Loaded:', resImg.width, 'x', resImg.height);
 
         this.canvas.width = this.maskBuffer.width = this.originalImg.width;
         this.canvas.height = this.maskBuffer.height = this.originalImg.height;
+        this.maskCtx.clearRect(0,0,this.canvas.width, this.canvas.height);
         this.maskCtx.drawImage(resImg, 0, 0, this.canvas.width, this.canvas.height);
         
         document.getElementById('loading-state').classList.add('hidden');
@@ -548,6 +563,7 @@
         this.setZoom('fit');
         this.setTool('erase');
         this.render();
+        console.log('Extraction Render Complete');
       }
 
       setTool(t) {
