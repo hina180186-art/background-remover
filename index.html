@@ -139,10 +139,40 @@
         <button onclick="localStorage.clear(); location.reload();" class="text-[9px] lux-text text-white/20 hover:text-gold block mx-auto underline mt-4">Reset Authentication</button>
       </div>
     </div>
+  </template>
+
+  <!-- Auth Portal (Landing) -->
+  <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#020202] transition-all duration-1000">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.05)_0%,transparent_70%)]"></div>
+    <div class="w-full max-w-md relative z-10 text-center">
+      <div id="auth-stage-email" class="space-y-12">
+        <div class="flex flex-col items-center gap-6">
+           <div class="w-16 h-16 border border-gold/30 flex items-center justify-center transform rotate-45 bg-gold/5 mb-4">
+             <span class="text-gold font-bold -rotate-45 text-3xl italic">A</span>
+           </div>
+           <h1 class="lux-text text-3xl gold-glow tracking-[0.3em]">AURA ELITE+</h1>
+           <p class="text-white/20 lux-text text-[10px] tracking-[0.4em] uppercase">The Sovereign of Extraction</p>
+        </div>
+        <div class="space-y-4">
+          <input type="email" id="auth-email" placeholder="ENTER YOUR LUXURY EMAIL" class="w-full bg-transparent border-b border-gold/20 py-4 text-center lux-text text-[10px] tracking-widest focus:outline-none focus:border-gold transition-colors text-white/80" />
+          <button id="btn-send-otp" class="btn-aura w-full text-[10px] py-6">Request Access</button>
+        </div>
+      </div>
+      <div id="auth-stage-otp" class="hidden space-y-12">
+        <h2 class="lux-text text-xl gold-glow tracking-widest">Verify Estate</h2>
+        <div class="flex justify-center gap-3">
+           <input type="text" id="auth-otp" maxlength="6" placeholder="000000" class="bg-transparent border-b-2 border-gold/20 text-4xl text-center w-64 focus:outline-none focus:border-gold transition-all tracking-[0.5em] font-thin" />
+        </div>
+        <button id="btn-verify-otp" class="btn-aura w-full text-[10px] py-6">Authorize Studio</button>
+        <button onclick="localStorage.clear(); location.reload();" class="text-[9px] lux-text text-white/20 hover:text-gold block mx-auto underline mt-4">Reset Credentials</button>
+      </div>
+    </div>
   </div>
 
-  <!-- Entire App Container: Hidden until Auth -->
-  <div id="app-container" class="hidden transition-opacity duration-1000">
+  <!-- Software Blueprint (Locked) -->
+  <template id="app-blueprint">
+    <div id="app-container" class="opacity-0 transition-opacity duration-1000">
+      <div id="cursor-ring" class="hidden md:block"></div>
     <div id="cursor-ring" class="hidden md:block"></div>
   
   <!-- Navigation -->
@@ -394,16 +424,33 @@
       }
 
       unlock() {
-        console.log('[AUTH] Token Verified. Unlocking Studio...');
-        this.overlay.classList.add('hidden');
-        document.body.classList.remove('no-scroll-auth');
-        const container = document.getElementById('app-container');
-        container.classList.remove('hidden');
-        container.classList.add('opacity-0');
-        requestAnimationFrame(() => {
-          container.classList.add('opacity-100');
+        console.log('[AUTH] Access Granted. Building Studio...');
+        
+        // 1. Physically build the app from the blueprint
+        const blueprint = document.getElementById('app-blueprint');
+        const clone = blueprint.content.cloneNode(true);
+        document.body.appendChild(clone);
+
+        // 2. Clear Auth Overlay
+        gsap.to(this.overlay, { 
+          opacity: 0, 
+          scale: 1.1, 
+          duration: 1.5, 
+          ease: 'power4.inOut', 
+          onComplete: () => {
+            this.overlay.remove();
+            document.body.classList.remove('no-scroll-auth');
+            
+            // 3. Setup interaction & editor
+            const container = document.getElementById('app-container');
+            container.classList.remove('opacity-0');
+            container.classList.add('opacity-100');
+            
+            // Initialize the rest of the application
+            initFullApp();
+            gsap.from(".hero-reveal > *", { opacity: 0, y: 30, stagger: 0.2, duration: 1.5, ease: "power4.out" });
+          } 
         });
-        gsap.from(".hero-reveal > *", { opacity: 0, y: 30, stagger: 0.2, duration: 1.5, ease: "power4.out" });
       }
 
       init() {
@@ -464,27 +511,26 @@
       }
     }
     new AuraAuth();
-    gsap.registerPlugin(ScrollTrigger);
+    function initFullApp() {
+      console.log('Building interactive layer...');
+      gsap.registerPlugin(ScrollTrigger);
 
-    function scrollTo(id) { document.getElementById(id).scrollIntoView({ behavior: 'smooth' }); }
+      // Floating Cursor Ring
+      const cursor = document.getElementById('cursor-ring');
+      document.addEventListener('mousemove', (e) => {
+         gsap.to(cursor, { x: e.clientX - 25, y: e.clientY - 25, duration: 0.1 });
+      });
 
-    // Floating Cursor Ring
-    const cursor = document.getElementById('cursor-ring');
-    document.addEventListener('mousemove', (e) => {
-       gsap.to(cursor, { x: e.clientX - 25, y: e.clientY - 25, duration: 0.1 });
-    });
-
-    // Reveal Animations
-    window.onload = () => {
-       document.querySelectorAll(".reveal-on-scroll").forEach(el => {
+      // Reveal Animations on newly generated DOM
+      document.querySelectorAll(".reveal-on-scroll").forEach(el => {
           gsap.from(el, {
              scrollTrigger: { trigger: el, start: "top 90%" },
              opacity: 0, y: 50, duration: 2, ease: "expo.out"
           });
-       });
+      });
 
-       // 3D Tilt Applied to Feature Cards
-       document.querySelectorAll('.feature-card').forEach(card => {
+      // 3D Tilt for Feature Cards
+      document.querySelectorAll('.feature-card').forEach(card => {
           card.addEventListener('mousemove', (e) => {
              const rect = card.getBoundingClientRect();
              const x = (e.clientX - rect.left) / rect.width;
@@ -496,8 +542,33 @@
           card.addEventListener('mouseleave', () => {
              gsap.to(card, { rotateY: 0, rotateX: 0, duration: 0.5 });
           });
-       });
-    };
+      });
+
+      // Nav Dot Sync
+      window.addEventListener('scroll', () => {
+         const sections = ['hero', 'features', 'studio'];
+         const dots = document.querySelectorAll('.nav-dot');
+         if (!dots.length) return;
+         sections.forEach((id, i) => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            const rect = el.getBoundingClientRect();
+            if (rect.top <= window.innerHeight/2 && rect.bottom >= window.innerHeight/2) {
+               dots.forEach(d => d.classList.remove('active'));
+               dots[i].classList.add('active');
+            }
+         });
+      });
+
+      // Fire up the Editor
+      window.app = new AuraEditor();
+    }
+
+    function scrollTo(id) { 
+      const el = document.getElementById(id);
+      if (el) el.scrollIntoView({ behavior: 'smooth' }); 
+      else console.warn('Studio not built yet. Authenticate first.');
+    }
 
     // Nav Dot Sync
     window.addEventListener('scroll', () => {
@@ -743,7 +814,8 @@
         l.click();
       }
     }
-    const app = new AuraEditor();
+    // Global Reference
+    window.app = null;
   </script>
 </body>
 </html>
