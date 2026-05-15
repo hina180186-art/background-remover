@@ -86,8 +86,14 @@ app.post("/remove-bg", upload.single("image"), async (req, res) => {
   }
 });
 
-// ─── Start server ─────────────────────────────────────────────────
-app.listen(PORT, () => {
-  console.log(`\n🚀  AI Background Remover running at http://localhost:${PORT}`);
-  console.log(`🔑  API: Remove.bg (${config.REMOVE_BG_API_KEY !== "YOUR_REMOVE_BG_API_KEY_HERE" ? "✅ Key Set" : "❌ Key Missing"})\n`);
-});
+// ─── Start Server (Condition for local dev)
+if (process.env.NODE_ENV !== 'production') {
+  const PORT = config.PORT || 3000;
+  app.listen(PORT, () => {
+    console.log(`🚀  AI Background Remover running at http://localhost:${PORT}`);
+    console.log(`🔑  API: Remove.bg (${(process.env.REMOVE_BG_API_KEY || config.REMOVE_BG_API_KEY) !== "YOUR_REMOVE_BG_API_KEY_HERE" ? '✅ Key Set' : '❌ Key Missing'})`);
+  });
+}
+
+// Export for Vercel
+module.exports = app;
