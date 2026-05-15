@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Background Remover</title>
+  <meta name="description" content="Remove image backgrounds instantly using AI — powered by Qwen image-edit API." />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" />
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+
+    body {
+      background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+      min-height: 100vh;
+    }
+
+    /* Glassmorphism card */
+    .glass {
+      background: rgba(255,255,255,0.07);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+      border: 1px solid rgba(255,255,255,0.12);
+    }
+
+    /* Upload zone */
+    #drop-zone {
+      border: 2px dashed rgba(139,92,246,0.6);
+      transition: border-color 0.3s, background 0.3s, transform 0.2s;
+      cursor: pointer;
+    }
+    #drop-zone.dragover {
+      border-color: #a78bfa;
+      background: rgba(139,92,246,0.15);
+      transform: scale(1.01);
+    }
+
+    /* Spinner */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 52px; height: 52px;
+      border: 4px solid rgba(139,92,246,0.25);
+      border-top-color: #a78bfa;
+      border-radius: 50%;
+      animation: spin 0.9s linear infinite;
+    }
+
+    /* Shimmer pulse on preview placeholder */
+    @keyframes shimmer {
+      0%,100% { opacity: 0.4; }
+      50% { opacity: 0.8; }
+    }
+    .shimmer { animation: shimmer 2s ease-in-out infinite; }
+
+    /* Checkered transparency pattern */
+    .transparent-bg {
+      background-image:
+        linear-gradient(45deg, #ccc 25%, transparent 25%),
+        linear-gradient(-45deg, #ccc 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #ccc 75%),
+        linear-gradient(-45deg, transparent 75%, #ccc 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0px;
+      background-color: #fff;
+    }
+
+    /* Button gradient */
+    .btn-primary {
+      background: linear-gradient(135deg, #7c3aed, #4f46e5);
+      transition: filter 0.2s, transform 0.15s;
+    }
+    .btn-primary:hover { filter: brightness(1.15); transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(0); }
+
+    .btn-outline {
+      border: 1.5px solid rgba(139,92,246,0.55);
+      transition: background 0.2s, transform 0.15s;
+    }
+    .btn-outline:hover { background: rgba(139,92,246,0.18); transform: translateY(-1px); }
+
+    /* Fade-in */
+    @keyframes fadeIn { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+    .fade-in { animation: fadeIn 0.5s ease forwards; }
+
+    /* Progress bar */
+    @keyframes progress { from { width: 0%; } to { width: 90%; } }
+    #progress-bar { animation: progress 8s ease-out forwards; }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col items-center px-4 py-10">
+
+  <!-- ── Header ── -->
+  <header class="text-center mb-10 fade-in">
+    <div class="inline-flex items-center gap-2 mb-3">
+      <span class="text-3xl">✂️</span>
+      <h1 class="text-4xl font-extrabold text-white tracking-tight">AI Background Remover</h1>
+    </div>
+    <p class="text-purple-300 text-sm mt-1">Upload any image — our AI removes the background in seconds</p>
+  </header>
+
+  <!-- ── Main card ── -->
+  <main class="glass rounded-3xl w-full max-w-4xl p-8 md:p-12 shadow-2xl fade-in">
+
+    <!-- Upload section -->
+    <section id="upload-section">
+      <div
+        id="drop-zone"
+        class="rounded-2xl flex flex-col items-center justify-center gap-4 py-16 px-6 text-center select-none"
+        onclick="document.getElementById('file-input').click()"
+      >
+        <div class="text-6xl shimmer">🖼️</div>
+        <div>
+          <p class="text-white font-semibold text-lg">Drag &amp; drop your image here</p>
+          <p class="text-purple-300 text-sm mt-1">or click to browse — JPEG, PNG, WebP (max 10 MB)</p>
+        </div>
+        <button
+          class="btn-primary text-white font-semibold px-6 py-2.5 rounded-xl text-sm mt-2"
+          onclick="event.stopPropagation(); document.getElementById('file-input').click()"
+        >
+          Choose Image
+        </button>
+      </div>
+      <input id="file-input" type="file" accept="image/jpeg,image/png,image/webp" class="hidden" />
+    </section>
+
+    <!-- ── Loader ── -->
+    <section id="loader-section" class="hidden flex-col items-center justify-center gap-6 py-16">
+      <div class="spinner"></div>
+      <p class="text-purple-200 font-medium text-lg">Removing background…</p>
+      <div class="w-64 bg-purple-900/40 rounded-full h-2 overflow-hidden">
+        <div id="progress-bar" class="h-2 rounded-full bg-gradient-to-r from-purple-500 to-indigo-400 w-0"></div>
+      </div>
+      <p class="text-purple-400 text-xs">This usually takes 5–15 seconds</p>
+    </section>
+
+    <!-- ── Preview ── -->
+    <section id="preview-section" class="hidden fade-in">
+      <h2 class="text-white font-bold text-xl mb-6 text-center">Result Preview</h2>
+
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+        <!-- Original -->
+        <div class="flex flex-col gap-3">
+          <p class="text-purple-300 text-sm font-medium text-center uppercase tracking-widest">Original</p>
+          <div class="rounded-2xl overflow-hidden border border-white/10 shadow-lg bg-gray-800">
+            <img id="original-preview" src="" alt="Original image" class="w-full object-contain max-h-72" />
+          </div>
+        </div>
+
+        <!-- Result -->
+        <div class="flex flex-col gap-3">
+          <p class="text-purple-300 text-sm font-medium text-center uppercase tracking-widest">Background Removed</p>
+          <div class="rounded-2xl overflow-hidden border border-purple-600/40 shadow-lg transparent-bg">
+            <img id="result-preview" src="" alt="Background-removed image" class="w-full object-contain max-h-72" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Buttons -->
+      <div class="flex flex-wrap justify-center gap-4 mt-8">
+        <button
+          id="download-btn"
+          class="btn-primary text-white font-semibold px-8 py-3 rounded-xl flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"/>
+          </svg>
+          Download PNG
+        </button>
+        <button
+          id="reset-btn"
+          class="btn-outline text-purple-300 font-semibold px-8 py-3 rounded-xl flex items-center gap-2"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582M20 20v-5h-.582M5.635 15A8 8 0 1118.364 9"/>
+          </svg>
+          Try Another Image
+        </button>
+      </div>
+    </section>
+
+    <!-- ── Error banner ── -->
+    <div
+      id="error-banner"
+      class="hidden mt-6 bg-red-900/40 border border-red-500/40 text-red-300 rounded-xl px-5 py-4 text-sm fade-in"
+    ></div>
+
+  </main>
+
+  <!-- ── Footer ── -->
+  <footer class="text-purple-500 text-xs mt-8 text-center">
+    Powered by Qwen image-edit API &nbsp;·&nbsp; Your images are never stored
+  </footer>
+
+  <!-- ── JavaScript ── -->
+  <script>
+    const dropZone   = document.getElementById("drop-zone");
+    const fileInput  = document.getElementById("file-input");
+    const uploadSec  = document.getElementById("upload-section");
+    const loaderSec  = document.getElementById("loader-section");
+    const previewSec = document.getElementById("preview-section");
+    const errorBanner= document.getElementById("error-banner");
+    const originalImg= document.getElementById("original-preview");
+    const resultImg  = document.getElementById("result-preview");
+    const downloadBtn= document.getElementById("download-btn");
+    const resetBtn   = document.getElementById("reset-btn");
+
+    // ── Drag & drop events ──
+    dropZone.addEventListener("dragover", e => { e.preventDefault(); dropZone.classList.add("dragover"); });
+    dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
+    dropZone.addEventListener("drop", e => {
+      e.preventDefault();
+      dropZone.classList.remove("dragover");
+      const file = e.dataTransfer.files[0];
+      if (file) handleFile(file);
+    });
+
+    fileInput.addEventListener("change", () => {
+      if (fileInput.files[0]) handleFile(fileInput.files[0]);
+    });
+
+    resetBtn.addEventListener("click", resetUI);
+
+    // ── File handler ──
+    function handleFile(file) {
+      const allowed = ["image/jpeg", "image/png", "image/webp"];
+      if (!allowed.includes(file.type)) {
+        showError("Please upload a JPEG, PNG, or WebP image.");
+        return;
+      }
+      if (file.size > 10 * 1024 * 1024) {
+        showError("File is too large. Maximum size is 10 MB.");
+        return;
+      }
+
+      // Show original preview
+      const reader = new FileReader();
+      reader.onload = ev => { originalImg.src = ev.target.result; };
+      reader.readAsDataURL(file);
+
+      showLoader();
+      uploadImage(file);
+    }
+
+    // ── Upload to server ──
+    async function uploadImage(file) {
+      hideError();
+      const formData = new FormData();
+      formData.append("image", file);
+
+      try {
+        const res = await fetch("/remove-bg", { method: "POST", body: formData });
+        const data = await res.json();
+
+        if (!res.ok || !data.success) {
+          throw new Error(data.error || "Unknown server error.");
+        }
+
+        resultImg.src = data.image;
+        downloadBtn.onclick = () => downloadImage(data.image);
+        showPreview();
+      } catch (err) {
+        showError(err.message);
+        resetToUpload();
+      }
+    }
+
+    // ── Download ──
+    function downloadImage(dataUrl) {
+      const a = document.createElement("a");
+      a.href = dataUrl;
+      a.download = "background-removed.png";
+      a.click();
+    }
+
+    // ── UI helpers ──
+    function showLoader() {
+      uploadSec.classList.add("hidden");
+      loaderSec.classList.remove("hidden");
+      loaderSec.classList.add("flex");
+      previewSec.classList.add("hidden");
+      // Reset progress bar
+      const bar = document.getElementById("progress-bar");
+      bar.style.animation = "none";
+      bar.offsetHeight; // reflow
+      bar.style.animation = "";
+    }
+
+    function showPreview() {
+      loaderSec.classList.add("hidden");
+      loaderSec.classList.remove("flex");
+      previewSec.classList.remove("hidden");
+      uploadSec.classList.add("hidden");
+    }
+
+    function resetToUpload() {
+      loaderSec.classList.add("hidden");
+      loaderSec.classList.remove("flex");
+      uploadSec.classList.remove("hidden");
+    }
+
+    function resetUI() {
+      previewSec.classList.add("hidden");
+      uploadSec.classList.remove("hidden");
+      fileInput.value = "";
+      originalImg.src = "";
+      resultImg.src = "";
+      hideError();
+    }
+
+    function showError(msg) {
+      errorBanner.textContent = "⚠️  " + msg;
+      errorBanner.classList.remove("hidden");
+    }
+    function hideError() {
+      errorBanner.classList.add("hidden");
+      errorBanner.textContent = "";
+    }
+  </script>
+</body>
+</html>
