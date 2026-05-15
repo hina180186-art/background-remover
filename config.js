@@ -11,5 +11,6 @@ module.exports = {
   MAX_FILE_SIZE_MB: 10,
 
   // SMTP Settings
-  SMTP_FROM: process.env.SMTP_FROM || '"Aura Elite+ Authenticator" <auth@aura-elite.pro>',
+  SMTP_FROM: process.env.SMTP_FROM || 'Aura Elite+ <onboarding@resend.dev>',
+  SMTP_HOST: process.env.SMTP_HOST || 'smtp.resend.com',
 };

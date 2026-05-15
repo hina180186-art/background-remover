@@ -87,39 +87,32 @@ app.post('/api/auth/send-otp', async (req, res) => {
   otpStore.set(email, { otp, expires: Date.now() + 10 * 60 * 1000 }); 
 
   const mailOptions = {
-    from: '"Aura Elite+" <onboarding@resend.dev>',
+    from: config.SMTP_FROM,
     to: email,
-    subject: 'Your Aura Elite+ Access Code',
-    text: `Your luxury access code is: ${otp}. It expires in 10 minutes.`,
-    html: `
-      <div style="background:#020202; color:#fff; padding:40px; font-family:'Outfit', sans-serif; text-align:center; border:1px solid #D4AF37;">
-        <h2 style="color:#D4AF37; text-transform:uppercase; letter-spacing:4px;">Aura Elite+</h2>
-        <p style="font-size:18px; opacity:0.8;">Your exclusive access code is:</p>
-        <h1 style="font-size:48px; color:#D4AF37; margin:20px 0;">${otp}</h1>
-        <p style="font-size:12px; opacity:0.4; text-transform:uppercase; letter-spacing:2px;">Expires in 10 minutes</p>
-      </div>
-    `
+    subject: `[Aura Access] Verification Code: ${otp}`,
+    text: `Your elite access code is: ${otp}`,
+    html: `<div style="background:#000; color:#fff; padding:30px; border:1px solid #D4AF37; text-align:center;">
+            <h1 style="color:#D4AF37;">Aura Elite+</h1>
+            <p>Your luxury access code is: <strong style="font-size:24px;">${otp}</strong></p>
+           </div>`
   };
 
   try {
-    // Always log OTP in development for easier testing
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('----------------------------------------------------');
-      console.log(`🔑  OTP for ${email}: ${otp} (FROM: ${config.SMTP_FROM})`);
-      console.log('----------------------------------------------------');
-    }
-
     if (process.env.SMTP_HOST) {
        await transporter.sendMail(mailOptions);
-       console.log(`[AUTH] OTP ${otp} sent to ${email}`);
-       return res.json({ success: true, message: 'OTP sent' });
+       console.log(`[SMTP] Success: Code ${otp} sent to ${email}`);
+       res.json({ success: true, message: 'Code delivered to inbox' });
     } else {
-       console.warn(`[AUTH] No SMTP_HOST found. OTP ${otp} logged in console.`);
-       return res.json({ success: true, message: `OTP generated (Check Dev Console)` });
+       console.warn(`[SMTP] No Host. Code ${otp} for ${email}`);
+       res.json({ success: true, message: 'Dev Mode: Code logged in console' });
     }
   } catch (err) {
-    console.error('Email error:', err);
-    return res.status(500).json({ success: false, error: 'Failed to deliver essence code.' });
+    console.error('[SMTP] Critical Failure:', err);
+    let advice = "Verification failed.";
+    if (config.SMTP_FROM.includes("onboarding@resend.dev")) {
+      advice = "Resend (Free Tier) only sends to your own email. Verify your domain at resend.com for real users.";
+    }
+    res.status(500).json({ success: false, error: advice });
   }
 });
 
