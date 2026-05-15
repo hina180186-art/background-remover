@@ -1,12 +1,12 @@
 /**
  * server.js — AI Background Remover Backend
- * Uses qwen-image-edit-max via DashScope with base64 images in messages format.
- * API: POST /api/v1/services/aigc/image-generation/generation
+ * Uses Remove.bg API for reliable background removal.
  */
 
 const express = require("express");
 const multer = require("multer");
 const axios = require("axios");
+const FormData = require("form-data");
 const path = require("path");
 const config = require("./config");
 
@@ -40,95 +40,54 @@ app.post("/remove-bg", upload.single("image"), async (req, res) => {
     return res.status(400).json({ error: "No image file uploaded." });
   }
 
+  if (config.REMOVE_BG_API_KEY === "YOUR_REMOVE_BG_API_KEY_HERE") {
+    return res.status(400).json({ error: "Please set your Remove.bg API Key in config.js" });
+  }
+
   try {
-    const imageBase64 = req.file.buffer.toString("base64");
-    const mimeType = req.file.mimetype;
-    // Build data URI for inline base64 image
-    const dataUri = `data:${mimeType};base64,${imageBase64}`;
+    console.log("Sending image to Remove.bg...");
 
-    /**
-     * DashScope qwen-image-edit API
-     * Endpoint: https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation
-     * Model: qwen-image-edit-max
-     * Input: messages array — image data URI + editing text instruction
-     */
-    const payload = {
-      model: "qwen-image-edit-max",
-      input: {
-        messages: [
-          {
-            role: "user",
-            content: [
-              { image: dataUri },
-              { text: "Remove the background from this image and make it fully transparent." },
-            ],
-          },
-        ],
+    const formData = new FormData();
+    formData.append("image_file", req.file.buffer, {
+      filename: req.file.originalname,
+      contentType: req.file.mimetype,
+    });
+    formData.append("size", "auto");
+
+    const response = await axios.post("https://api.remove.bg/v1.0/removebg", formData, {
+      headers: {
+        ...formData.getHeaders(),
+        "X-Api-Key": config.REMOVE_BG_API_KEY,
       },
-      parameters: {
-        n: 1,
-      },
-    };
+      responseType: "arraybuffer", // Remove.bg returns the binary image immediately
+      timeout: 60000,
+    });
 
-    console.log("Calling DashScope API...");
-    const response = await axios.post(
-      "https://dashscope.aliyuncs.com/api/v1/services/aigc/image-generation/generation",
-      payload,
-      {
-        headers: {
-          Authorization: `Bearer ${config.DASHSCOPE_API_KEY}`,
-          "Content-Type": "application/json",
-        },
-        timeout: 120000,
-      }
-    );
-
-    const data = response.data;
-    console.log("Qwen API response:", JSON.stringify(data, null, 2));
-
-    // Extract result URL from output.results[]
-    const results = data?.output?.results;
-    if (!results || results.length === 0) {
-      return res.status(500).json({ error: "No result returned from Qwen API.", raw: data });
-    }
-
-    const resultUrl = results[0]?.url;
-    if (!resultUrl) {
-      return res.status(500).json({ error: "Qwen returned no image URL.", raw: data });
-    }
-
-    // Fetch result image and proxy it as base64 to avoid CORS issues
-    const imgResponse = await axios.get(resultUrl, { responseType: "arraybuffer" });
-    const resultBase64 = Buffer.from(imgResponse.data).toString("base64");
-    const resultMime = imgResponse.headers["content-type"] || "image/png";
-
+    // Convert binary result to base64 for the frontend
+    const resultBase64 = Buffer.from(response.data).toString("base64");
+    
     return res.json({
       success: true,
-      image: `data:${resultMime};base64,${resultBase64}`,
+      image: `data:image/png;base64,${resultBase64}`,
     });
 
   } catch (err) {
-    const apiErr = err?.response?.data;
-    console.error("Qwen API error:", JSON.stringify(apiErr ?? err.message, null, 2));
-    const msg =
-      apiErr?.message ||
-      apiErr?.error?.message ||
-      err.message;
-    return res.status(500).json({ error: `Background removal failed: ${msg}` });
+    // Attempt to parse binary error response from Remove.bg
+    let errorMsg = err.message;
+    if (err.response && err.response.data) {
+      try {
+        const decodedError = JSON.parse(Buffer.from(err.response.data).toString());
+        errorMsg = decodedError.errors?.[0]?.title || errorMsg;
+      } catch (_) {}
+    }
+    
+    console.error("Remove.bg Error:", errorMsg);
+    return res.status(500).json({ error: `Background removal failed: ${errorMsg}` });
   }
-});
-
-// ─── Global error handler ─────────────────────────────────────────
-app.use((err, req, res, next) => {
-  if (err instanceof multer.MulterError) {
-    return res.status(400).json({ error: `Upload error: ${err.message}` });
-  }
-  if (err) return res.status(400).json({ error: err.message });
-  next();
 });
 
 // ─── Start server ─────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\n🚀  AI Background Remover running at http://localhost:${PORT}`);
-  console.log(`🔑  API Key: ${config.DASHSCOPE_API_KEY !== "YOUR_DASHSCOPE_API_KEY_HERE" ? "✅ Set" : "❌ Not set — edit config.js"}\n`);
+  console.log(`🔑  API: Remove.bg (${config.REMOVE_BG_API_KEY !== "YOUR_REMOVE_BG_API_KEY_HERE" ? "✅ Key Set" : "❌ Key Missing"})\n`);
 });
