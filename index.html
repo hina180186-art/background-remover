@@ -107,7 +107,11 @@
     .nav-dot.active { background: var(--gold); width: 12px; height: 28px; border-radius: 10px; box-shadow: 0 0 15px var(--gold); }
   </style>
 </head>
-<body class="overflow-x-hidden">
+<body class="overflow-x-hidden no-scroll-auth">
+
+  <style>
+    body.no-scroll-auth { overflow: hidden !important; }
+  </style>
 
   <!-- ─── Authentication Overlay ─── -->
   <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-3xl px-6">
@@ -243,9 +247,9 @@
           
           <!-- Viewport -->
           <div class="flex flex-col gap-8">
-             <div class="flex-1 glass-editor relative overflow-hidden group shadow-inner" id="viewport">
+             <div class="flex-1 glass-editor relative overflow-hidden group shadow-inner flex items-center justify-center" id="viewport">
                 <div class="absolute inset-0 bg-[#050505] opacity-50 z-0"></div>
-                <canvas id="main-canvas" class="relative z-10 cursor-crosshair max-w-full max-h-full"></canvas>
+                <canvas id="main-canvas" class="relative z-10 cursor-crosshair shadow-2xl"></canvas>
                 
                 <!-- Tool Bar Modern -->
                 <div class="absolute bottom-12 left-1/2 -translate-x-1/2 flex items-center gap-2 p-3 rounded-full bg-black/60 backdrop-blur-2xl border border-gold/20 shadow-2xl z-20">
@@ -350,7 +354,10 @@
         this.token = localStorage.getItem('aura_token');
         this.email = '';
 
-        if (this.token) this.overlay.classList.add('hidden');
+        if (this.token) {
+          this.overlay.classList.add('hidden');
+          document.body.classList.remove('no-scroll-auth');
+        }
         this.init();
       }
 
@@ -388,6 +395,7 @@
           const data = await res.json();
           if (data.success) {
              localStorage.setItem('aura_token', data.token);
+             document.body.classList.remove('no-scroll-auth');
              gsap.to(this.overlay, { opacity: 0, scale: 1.1, duration: 1, ease: 'power4.in', onComplete: () => this.overlay.remove() });
           } else throw new Error(data.error);
         } catch (e) { alert(e.message); }
@@ -498,6 +506,11 @@
 
       async handleUpload(file) {
         if(!file) return;
+        if(!localStorage.getItem('aura_token')) {
+           alert('Access Denied: Please authenticate through the Elite portal first.');
+           location.reload();
+           return;
+        }
         document.getElementById('upload-state').classList.add('hidden');
         document.getElementById('loading-state').classList.remove('hidden');
         document.getElementById('loading-state').classList.add('active');
@@ -528,7 +541,7 @@
 
         this.canvas.width = this.maskBuffer.width = this.originalImg.width;
         this.canvas.height = this.maskBuffer.height = this.originalImg.height;
-        this.maskCtx.drawImage(resImg, 0, 0);
+        this.maskCtx.drawImage(resImg, 0, 0, this.canvas.width, this.canvas.height);
         
         document.getElementById('loading-state').classList.add('hidden');
         document.getElementById('editor-state').classList.remove('hidden');
