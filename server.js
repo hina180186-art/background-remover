@@ -19,6 +19,20 @@ const PORT = config.PORT;
 const otpStore = new Map();
 const JWT_SECRET = process.env.JWT_SECRET || 'aura-elite-secret-777';
 
+// --- AUTH MIDDLEWARE ---
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (!token) return res.status(401).json({ success: false, error: 'Authorization required' });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ success: false, error: 'Invalid or expired session' });
+    req.user = user;
+    next();
+  });
+};
+
 // ─── Multer: in-memory storage ──────────────────────────────────
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -111,7 +125,11 @@ app.get("/", (req, res) => {
 });
 
 // ─── POST /remove-bg ─────────────────────────────────────────────
-app.post("/remove-bg", upload.single("image"), async (req, res) => {
+app.get('/api/auth/check', authenticateToken, (req, res) => {
+  res.json({ success: true, email: req.user.email });
+});
+
+app.post("/remove-bg", authenticateToken, upload.single("image"), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No image file uploaded." });
   }

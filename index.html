@@ -353,10 +353,24 @@
         this.emailInput = document.getElementById('auth-email');
         this.otpInput = document.getElementById('auth-otp');
         this.token = localStorage.getItem('aura_token');
-        this.email = '';
+        this.email = localStorage.getItem('aura_email') || '';
 
-        if (this.token) this.unlock();
+        if (this.token) this.checkToken();
         this.init();
+      }
+
+      async checkToken() {
+        try {
+          const res = await fetch('/api/auth/check', {
+            headers: { 'Authorization': `Bearer ${this.token}` }
+          });
+          if (res.ok) {
+            this.unlock();
+          } else {
+            localStorage.removeItem('aura_token');
+            location.reload();
+          }
+        } catch (e) { console.error('Auth Check Failed'); }
       }
 
       unlock() {
@@ -534,7 +548,11 @@
         fd.append('image', file);
 
         try {
-          const res = await fetch('/remove-bg', { method: 'POST', body: fd });
+          const res = await fetch('/remove-bg', { 
+            method: 'POST', 
+            body: fd,
+            headers: { 'Authorization': `Bearer ${localStorage.getItem('aura_token')}` }
+          });
           if (!res.ok) {
              const text = await res.text();
              throw new Error(text || `Server Error (${res.status})`);
