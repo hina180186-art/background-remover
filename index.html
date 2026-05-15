@@ -393,15 +393,18 @@
 
       async verifyOTP() {
         const otp = this.otpInput.value;
+        if (!otp || otp.length < 6) return alert('Enter full 6-digit code');
+        
         try {
           const res = await fetch('/api/auth/verify-otp', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email: this.email, otp })
+            body: JSON.stringify({ email: this.email || localStorage.getItem('aura_email'), otp })
           });
           const data = await res.json();
           if (data.success) {
              localStorage.setItem('aura_token', data.token);
+             localStorage.setItem('aura_email', this.email);
              this.unlock();
              gsap.to(this.overlay, { opacity: 0, scale: 1.1, duration: 1, ease: 'power4.in', onComplete: () => this.overlay.remove() });
           } else throw new Error(data.error);
@@ -511,6 +514,13 @@
 
       async handleUpload(file) {
         if(!file) return;
+        
+        // Vercel / Serverless Payload Limit (4.5MB)
+        if (file.size > 4 * 1024 * 1024) {
+           alert('Aura Elite+ requires precision. Please upload an image under 4MB for high-res extraction.');
+           return;
+        }
+
         if(!localStorage.getItem('aura_token')) {
            alert('Access Denied: Please authenticate through the Elite portal first.');
            location.reload();
@@ -556,7 +566,12 @@
         this.canvas.width = this.maskBuffer.width = this.originalImg.width;
         this.canvas.height = this.maskBuffer.height = this.originalImg.height;
         this.maskCtx.clearRect(0,0,this.canvas.width, this.canvas.height);
-        this.maskCtx.drawImage(resImg, 0, 0, this.canvas.width, this.canvas.height);
+        
+        if (resImg.width > 0) {
+           this.maskCtx.drawImage(resImg, 0, 0, this.canvas.width, this.canvas.height);
+        } else {
+           console.error('Extraction Result Empty - Fallback to Masking');
+        }
         
         document.getElementById('loading-state').classList.add('hidden');
         document.getElementById('editor-state').classList.remove('hidden');
