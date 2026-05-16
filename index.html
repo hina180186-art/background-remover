@@ -356,6 +356,15 @@
         this.overlay = document.getElementById('auth-overlay');
         this.emailInput = document.getElementById('auth-email');
         this.otpInput = document.getElementById('auth-otp');
+        
+        // Force wipe old insecure cached sessions
+        if (!localStorage.getItem('aura_sec_v1')) {
+           localStorage.removeItem('aura_token');
+           localStorage.removeItem('aura_email');
+           localStorage.removeItem('aura_email_pending');
+           localStorage.setItem('aura_sec_v1', 'true');
+        }
+
         this.token = localStorage.getItem('aura_token');
         this.email = localStorage.getItem('aura_email') || localStorage.getItem('aura_email_pending') || '';
         
@@ -427,8 +436,6 @@
       init() {
         document.getElementById('btn-send-otp').onclick = () => this.sendOTP();
         document.getElementById('btn-verify-otp').onclick = () => this.verifyOTP();
-        const logoutBtn = document.getElementById('btn-logout');
-        if (logoutBtn) logoutBtn.onclick = () => this.logout();
       }
 
       logout() {
@@ -485,6 +492,16 @@
     function initFullApp() {
       console.log('Building interactive layer...');
       gsap.registerPlugin(ScrollTrigger);
+
+      // Wire up logout button from blueprint
+      const logoutBtn = document.getElementById('btn-logout');
+      if (logoutBtn) {
+         logoutBtn.onclick = () => {
+             localStorage.removeItem('aura_token');
+             localStorage.removeItem('aura_email');
+             location.reload();
+         };
+      }
 
       // Floating Cursor Ring
       const cursor = document.getElementById('cursor-ring');
