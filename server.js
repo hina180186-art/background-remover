@@ -11,6 +11,7 @@ const FormData = require("form-data");
 const path = require("path");
 const nodemailer = require("nodemailer");
 const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 const config = require("./config");
 
 const app = express();
@@ -49,11 +50,20 @@ const upload = multer({
 // ─── Middleware ──────────────────────────────────────────────────
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(cookieParser());
 
 // Block sensitive files from being served statically
 app.use((req, res, next) => {
   if (req.url.includes('config.js') || req.url.includes('.env')) {
     return res.status(403).json({ error: 'Access Denied' });
+  }
+  next();
+});
+
+app.get('/', (req, res, next) => {
+  const session = req.cookies?.auraSession;
+  if (!session) {
+    return res.redirect('/auth.html');
   }
   next();
 });

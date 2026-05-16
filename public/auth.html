@@ -363,7 +363,10 @@ async function resendCode(flow){
   }
 }
 
-function goToApp(){window.location.href='/';}
+function goToApp() {
+  document.cookie = 'auraSession=true; path=/; max-age=86400';
+  window.location.href = '/';
+}
 </script>
 </body>
 </html>
