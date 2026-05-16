@@ -31,7 +31,7 @@ module.exports = async function handler(req, res) {
     });
 
     await transporter.sendMail({
-      from: `"Aura Elite+" <${process.env.SMTP_USER}>`,
+      from: config.SMTP_FROM || `"Aura Elite+" <onboarding@resend.dev>`,
       to: email,
       subject: 'Your Aura Elite+ Verification Code',
       html: `
