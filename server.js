@@ -65,7 +65,7 @@ app.get('/', (req, res) => {
   if (!session) {
     return res.redirect('/auth.html');
   }
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, 'app.html'));
 });
 
 app.use(express.static(path.join(__dirname)));
