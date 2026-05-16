@@ -13,6 +13,10 @@
     {
       "src": "index.html",
       "use": "@vercel/static"
+    },
+    {
+      "src": "auth.html",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
@@ -22,6 +26,14 @@
     },
     {
       "src": "/remove-bg",
+      "dest": "server.js"
+    },
+    {
+      "src": "/auth\\.html",
+      "dest": "/auth.html"
+    },
+    {
+      "src": "/$",
       "dest": "server.js"
     },
     {
