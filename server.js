@@ -71,6 +71,7 @@ app.get('/', (req, res) => {
 app.use(express.static(path.join(__dirname)));
 
 // ─── Authentication Engine ──────────────────────────────────────
+app.post('/api/send-code', require('./api/send-code'));
 
 // Mock Transporter / Real Transporter
 const transporter = nodemailer.createTransport(
