@@ -113,34 +113,6 @@
     body.no-scroll-auth { overflow: hidden !important; }
   </style>
 
-  <!-- ─── Authentication Overlay ─── -->
-  <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center bg-black backdrop-blur-3xl px-6">
-    <div class="max-w-md w-full glass p-12 rounded-[50px] text-center border-gold/20 shadow-[-20px_-20px_60px_rgba(255,255,255,0.01),20px_20px_60px_rgba(0,0,0,0.5)]">
-      <div class="w-16 h-16 border border-gold/30 mx-auto mb-10 transform rotate-45 flex items-center justify-center bg-gold/5">
-        <span class="text-gold font-bold -rotate-45 text-2xl">A</span>
-      </div>
-      
-      <!-- Stage 1: Email -->
-      <div id="auth-stage-email" class="space-y-8">
-        <h2 class="lux-text text-xl gold-glow">Elite Authentication</h2>
-        <p class="text-white/30 text-xs tracking-widest font-light">Enter your email to receive an exclusive access code.</p>
-        <input type="email" id="auth-email" placeholder="email@luxury.com" class="w-full bg-white/5 border border-white/10 rounded-full px-8 py-5 text-center text-sm focus:outline-none focus:border-gold/50 transition-all font-light tracking-widest" />
-        <button id="btn-send-otp" class="btn-aura w-full text-[10px] py-5">Request Access</button>
-      </div>
-
-      <!-- Stage 2: OTP -->
-      <div id="auth-stage-otp" class="hidden space-y-8">
-        <h2 class="lux-text text-xl gold-glow">Verify Code</h2>
-        <p class="text-white/30 text-xs tracking-widest font-light">A 6-digit code has been sent to your essence.</p>
-        <div class="flex justify-center gap-3">
-           <input type="text" id="auth-otp" maxlength="6" placeholder="000000" class="bg-transparent border-b-2 border-gold/20 text-4xl text-center w-48 focus:outline-none focus:border-gold transition-all tracking-[0.5em] font-thin" />
-        </div>
-        <button id="btn-verify-otp" class="btn-aura w-full text-[10px] py-5">Initialize Aura</button>
-        <button onclick="localStorage.clear(); location.reload();" class="text-[9px] lux-text text-white/20 hover:text-gold block mx-auto underline mt-4">Reset Authentication</button>
-      </div>
-    </div>
-  </template>
-
   <!-- Auth Portal (Landing) -->
   <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#020202] transition-all duration-1000">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.05)_0%,transparent_70%)]"></div>
@@ -173,7 +145,6 @@
   <template id="app-blueprint">
     <div id="app-container" class="opacity-0 transition-opacity duration-1000">
       <div id="cursor-ring" class="hidden md:block"></div>
-    <div id="cursor-ring" class="hidden md:block"></div>
   
   <!-- Navigation -->
   <nav class="fixed right-10 top-1/2 -translate-y-1/2 z-50 flex flex-col gap-6">
