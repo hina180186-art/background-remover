@@ -1,6 +1,12 @@
 <!DOCTYPE html>
 <html lang="en" class="scroll-smooth">
 <head>
+  <script>
+    // Auth guard — redirect to login if not signed in
+    if (!localStorage.getItem('auraSession')) {
+      window.location.href = '/auth.html';
+    }
+  </script>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Aura Elite+ — The Pinnacle of AI Artistry</title>
@@ -108,6 +114,8 @@
   </style>
 </head>
 <body class="overflow-x-hidden no-scroll-auth">
+
+  <button onclick="signOut()" style="position:fixed;top:16px;right:16px;z-index:9999;background:none;border:1px solid #2a2820;color:#8a8070;font-family:'Josefin Sans',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;padding:8px 14px;cursor:pointer;">Sign Out</button>
 
   <style>
     body.no-scroll-auth { overflow: hidden !important; }
@@ -804,6 +812,11 @@
     }
     // Global Reference
     window.app = null;
+
+    function signOut() {
+      localStorage.removeItem('auraSession');
+      window.location.href = '/auth.html';
+    }
   </script>
 </body>
 </html>
