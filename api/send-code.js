@@ -107,6 +107,6 @@ module.exports = async function handler(req, res) {
 
   } catch (err) {
     console.error('Email send error:', err);
-    return res.status(500).json({ error: 'Failed to send email. Please try again.' });
+    return res.status(500).json({ error: `SMTP Crash: ${err.message}` });
   }
 };
