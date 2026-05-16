@@ -2,10 +2,7 @@
   "version": 2,
   "name": "aura-elite-plus",
   "builds": [
-    {
-      "src": "api/*.js",
-      "use": "@vercel/node"
-    },
+
     {
       "src": "server.js",
       "use": "@vercel/node"
@@ -22,7 +19,7 @@
   "routes": [
     {
       "src": "/api/(.*)",
-      "dest": "/api/$1"
+      "dest": "server.js"
     },
     {
       "src": "/remove-bg",
