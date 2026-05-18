@@ -373,8 +373,8 @@
         
         this.overlay.style.display = 'none';
 document.body.classList.remove('no-scroll-auth');
-this.unlock();
 this.init();
+setTimeout(() => this.unlock(), 100);
       }
 
       showOverlay() {
