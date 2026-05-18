@@ -253,7 +253,7 @@ function setStatus(id,msg,type){const el=document.getElementById(id);el.textCont
 function setLoading(btnId,loading,defaultText){const btn=document.getElementById(btnId);if(loading){btn.innerHTML='<span class="spinner"></span>Processing…';btn.disabled=true;}else{btn.innerHTML=defaultText;btn.disabled=false;}}
 function togglePw(inputId,btn){const inp=document.getElementById(inputId);if(inp.type==='password'){inp.type='text';btn.textContent='Hide';}else{inp.type='password';btn.textContent='Show';}}
 function showStep(flow,num){
-  var flowEl = document.getElementById(flow+'Flow');
+  var flowEl = document.getElementById(flow==='su'?'signupFlow':'signinFlow');
   flowEl.style.display='block';
   flowEl.querySelectorAll('.step').forEach(function(s,i){
     s.style.display=(i+1===num)?'block':'none';
