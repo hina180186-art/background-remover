@@ -332,6 +332,7 @@ async function suSubmit(){
   if(!name)return setStatus('suStatus','Please enter your name.','error');
   if(!email||!email.includes('@'))return setStatus('suStatus','Please enter a valid email address.','error');
   if(pass.length<8)return setStatus('suStatus','Password must be at least 8 characters.','error');
+ console.log('suSubmit running', name, email, pass.length);
   setLoading('suBtn',true,'Create Account');
   try{
     const existing = await getUser(email);
