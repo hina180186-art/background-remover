@@ -215,12 +215,39 @@
 
 </div>
 <script>
+const SUPABASE_URL = 'https://xxlrqwjjfuytbujnzplz.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_vWIU-8B-ew3fS41w5PhQLA_Pyyh1BS8';
+
 const state = {
   mode:'signin', email:'', code:'',
   timers:{si:null,su:null}, timerVal:{si:30,su:30},
-  users:JSON.parse(localStorage.getItem('auraUsers')||'{}'),
   pendingUser:null
 };
+
+async function sbFetch(path, method, body) {
+  const res = await fetch(SUPABASE_URL + '/rest/v1/' + path, {
+    method: method || 'GET',
+    headers: {
+      'apikey': SUPABASE_KEY,
+      'Authorization': 'Bearer ' + SUPABASE_KEY,
+      'Content-Type': 'application/json',
+      'Prefer': method === 'POST' ? 'return=representation' : ''
+    },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  return res;
+}
+
+async function getUser(email) {
+  const res = await sbFetch('users?email=eq.' + encodeURIComponent(email) + '&select=*');
+  const data = await res.json();
+  return data[0] || null;
+}
+
+async function createUser(name, email, password) {
+  const res = await sbFetch('users', 'POST', { name, email, password: btoa(password) });
+  return res.ok;
+}
 
 function setStatus(id,msg,type){const el=document.getElementById(id);el.textContent=msg;el.className='status '+(msg?type:'');}
 function setLoading(btnId,loading,defaultText){const btn=document.getElementById(btnId);if(loading){btn.innerHTML='<span class="spinner"></span>Processing…';btn.disabled=true;}else{btn.innerHTML=defaultText;btn.disabled=false;}}
@@ -279,11 +306,11 @@ async function siSubmit(){
   setStatus('siStatus','','');
   if(!email||!email.includes('@'))return setStatus('siStatus','Please enter a valid email address.','error');
   if(!pass)return setStatus('siStatus','Password is required.','error');
-  const users=JSON.parse(localStorage.getItem('auraUsers')||'{}');
-  if(!users[email])return setStatus('siStatus','No account found with this email.','error');
-  if(users[email].password!==btoa(pass))return setStatus('siStatus','Incorrect password. Please try again.','error');
   setLoading('siBtn',true,'Authenticate');
   try{
+    const user = await getUser(email);
+    if(!user){setLoading('siBtn',false,'Authenticate');return setStatus('siStatus','No account found with this email.','error');}
+    if(user.password!==btoa(pass)){setLoading('siBtn',false,'Authenticate');return setStatus('siStatus','Incorrect password. Please try again.','error');}
     await sendCode(email);
     setLoading('siBtn',false,'Authenticate');
     state.email=email;
@@ -293,7 +320,7 @@ async function siSubmit(){
     document.querySelector('#siCodeInputs .code-digit').focus();
   }catch(err){
     setLoading('siBtn',false,'Authenticate');
-    setStatus('siStatus',err.message||'Failed to send code. Please try again.','error');
+    setStatus('siStatus',err.message||'Failed. Please try again.','error');
   }
 }
 
@@ -305,21 +332,21 @@ async function suSubmit(){
   if(!name)return setStatus('suStatus','Please enter your name.','error');
   if(!email||!email.includes('@'))return setStatus('suStatus','Please enter a valid email address.','error');
   if(pass.length<8)return setStatus('suStatus','Password must be at least 8 characters.','error');
-  const users=JSON.parse(localStorage.getItem('auraUsers')||'{}');
-  if(users[email])return setStatus('suStatus','An account with this email already exists.','error');
   setLoading('suBtn',true,'Create Account');
   try{
+    const existing = await getUser(email);
+    if(existing){setLoading('suBtn',false,'Create Account');return setStatus('suStatus','An account with this email already exists.','error');}
     await sendCode(email);
     setLoading('suBtn',false,'Create Account');
     state.email=email;
-    state.pendingUser={name,email,password:btoa(pass)};
+    state.pendingUser={name,email,password:pass};
     document.getElementById('suEmailDisplay').textContent=email;
     showStep('su',2);startTimer('su');
     setStatus('suVerifyStatus','✦ Code sent — check your Gmail inbox','success');
     document.querySelector('#suCodeInputs .code-digit').focus();
   }catch(err){
     setLoading('suBtn',false,'Create Account');
-    setStatus('suStatus',err.message||'Failed to send code. Please try again.','error');
+    setStatus('suStatus',err.message||'Failed. Please try again.','error');
   }
 }
 
@@ -335,16 +362,14 @@ async function verifyCode(flow){
   if(entered!==state.code){setStatus(statusId,'Invalid code. Please check and try again.','error');clearCode(flow);return;}
   setStatus(statusId,'','');
   if(flow==='su'){
-    const users=JSON.parse(localStorage.getItem('auraUsers')||'{}');
-    users[state.pendingUser.email]=state.pendingUser;
-    localStorage.setItem('auraUsers',JSON.stringify(users));
-    localStorage.setItem('auraSession',JSON.stringify({email:state.pendingUser.email,name:state.pendingUser.name}));
+    const ok = await createUser(state.pendingUser.name, state.pendingUser.email, state.pendingUser.password);
+    if(!ok){setStatus(statusId,'Failed to create account. Try again.','error');return;}
+    document.cookie='auraSession=true;path=/;max-age=86400';
     showStep('su',3);
     setTimeout(()=>document.getElementById('progressBar').style.width='100%',100);
     setTimeout(()=>goToApp(),3200);
   }else{
-    const users=JSON.parse(localStorage.getItem('auraUsers')||'{}');
-    localStorage.setItem('auraSession',JSON.stringify({email:state.email,name:users[state.email]?.name}));
+    document.cookie='auraSession=true;path=/;max-age=86400';
     goToApp();
   }
 }
@@ -363,10 +388,7 @@ async function resendCode(flow){
   }
 }
 
-function goToApp() {
-  document.cookie = 'auraSession=true; path=/; max-age=86400';
-  window.location.href = '/';
-}
+function goToApp(){window.location.href='/';}
 </script>
 </body>
 </html>
