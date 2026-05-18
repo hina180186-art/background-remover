@@ -117,7 +117,7 @@
   </style>
 
   <!-- Auth Portal (Landing) -->
-  <div id="auth-overlay" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#020202] transition-all duration-1000">
+  <div id="auth-overlay" style="display:none" class="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-[#020202] transition-all duration-1000">
     <div class="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(212,175,55,0.05)_0%,transparent_70%)]"></div>
     <div class="w-full max-w-md relative z-10 text-center">
       <div id="auth-stage-email" class="space-y-12">
@@ -371,8 +371,10 @@
         this.token = localStorage.getItem('aura_token');
         this.email = localStorage.getItem('aura_email') || localStorage.getItem('aura_email_pending') || '';
         
-        this.unlock();
-        this.init();
+        this.overlay.style.display = 'none';
+document.body.classList.remove('no-scroll-auth');
+this.unlock();
+this.init();
       }
 
       showOverlay() {
