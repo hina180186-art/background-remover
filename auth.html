@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8"/>
+<meta charset="UTF-8"/> 
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Aura Elite+ — Auth</title>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500;600&family=Josefin+Sans:wght@200;300;400&display=swap" rel="stylesheet"/>
@@ -371,13 +371,15 @@ async function verifyCode(flow){
   if(flow==='su'){
     const ok = await createUser(state.pendingUser.name, state.pendingUser.email, state.pendingUser.password);
     if(!ok){setStatus(statusId,'Failed to create account. Try again.','error');return;}
-    document.cookie='auraSession=true;path=/;max-age=86400';
+    document.cookie='auraSession=true;path=/;max-age=86400;SameSite=Lax';
+    localStorage.setItem('auraSession','true');
     showStep('su',3);
     setTimeout(()=>document.getElementById('progressBar').style.width='100%',100);
     setTimeout(()=>goToApp(),3200);
   }else{
-    document.cookie='auraSession=true;path=/;max-age=86400';
-    goToApp();
+    document.cookie='auraSession=true;path=/;max-age=86400;SameSite=Lax';
+    localStorage.setItem('auraSession','true');
+    setTimeout(()=>goToApp(), 300);
   }
 }
 
