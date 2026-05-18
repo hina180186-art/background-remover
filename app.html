@@ -371,11 +371,7 @@
         this.token = localStorage.getItem('aura_token');
         this.email = localStorage.getItem('aura_email') || localStorage.getItem('aura_email_pending') || '';
         
-        if (this.token) {
-          this.checkToken();
-        } else {
-          this.showOverlay();
-        }
+        this.unlock();
         this.init();
       }
 
